@@ -1,2 +1,2 @@
 # pynotepad
-# the page is not finish
+# This page is not complete
