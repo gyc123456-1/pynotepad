@@ -1,0 +1,15 @@
+{
+  "name": "English Language Pack",
+  "version": "1.0.1",
+  "description": "Use this plugin to change the application language to English.",
+  "files": [
+    {
+      "file": "main.py",
+      "position": "init",
+      "wait": true,
+      "sign": "LiaQXR0ZVNUVrEx5qffiULZbSt8kAbm+Z2hxj+//0oeSR/wm6+O+5J2GJEZS0M5e9TL8rbsAJ8xyb49bCnrg9V1Pog/iwmvzloZhPyOFM0i6wKsupLMzZT/jqNwrYP8ttTI6LbXnlftCwLbM/L2dyZauwTSArtqeOa9YT3SjUdDd7L0wYYrAPI9Osf32bjTdg/pz4MCoPLEDWqgC1/3fDuzZu2JQKZrzJ5+XJLN7EV6krVNGD0TZkLkP8MiYFD527qYZpLPfnWOIDbEFP0e9DtlAQ1aC0yIRvLCgItCzyjRVjfkrfIHGgezq7n2y3vmB9/VbignzWyGKLPfJwaxanw=="
+    }
+  ],
+  "dependencies": [
+  ]
+}
