@@ -18,6 +18,10 @@ from Crypto.PublicKey import RSA
 from Crypto.Hash import SHA
 from Crypto.Signature import PKCS1_v1_5 as PKCS1_signature
 import ctypes
+import locale
+import zipfile
+import traceback
+import io
 
 ctypes.windll.shcore.SetProcessDpiAwareness(1)
 ScaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0)
@@ -65,10 +69,11 @@ def q(func):
                 return
             elif a:
                 if file_url == "":
-                    save_as()
+                    if save_as() == True:
+                        func(*args, **kwargs)
                 else:
-                    save()
-                func(*args, **kwargs)
+                    if save() == True:
+                        func(*args, **kwargs)
             else:
                 func(*args, **kwargs)
 
@@ -82,9 +87,15 @@ def make_new():
     file_url = ""
 
 
-def d_open(files):
-    url = [i.decode("gbk") for i in files]
-    open_file(url[0])
+def drop(func):
+    def warpper(files):
+        try:
+            url = [i.decode() for i in files]
+        except UnicodeDecodeError:
+            url = [i.decode("gbk") for i in files]
+        func(url[0])
+
+    return warpper
 
 
 @q
@@ -127,112 +138,71 @@ def open_file(url=""):
     file_url = url
     window.title(lang["title2"] + file_url)
     e.insert('end', text)
-    del_list = []
-    for key, i in plugins.items():
-        try:
-            for j in i["files"]:
-                if j["position"] == "open":
-                    try:
-                        with open(os.path.join("plugin", key, j["file"]), encoding="utf-8") as f:
-                            if j["wait"]:
-                                exec(f.read(), globals(), locals())
-                            else:
-                                threading.Thread(name=i["name"], target=exec,
-                                                 args=(f.read(), globals(), locals())).start()
-                    except FileNotFoundError:
-                        del_list.append(key)
-        except Exception as err:
-            tk.messagebox.showerror(i["name"], str(err))
-            del_list.append(key)
-    for i in del_list:
-        del plugins[i]
 
 
 def save():
     global window
     global file_url
+    issave = False
     if file_url == "":
-        save_as()
+        return save_as()
     else:
         if b.get():
             with open(file_url, "wb") as f:
-                f.write(eval("b'" + e.get("0.0", "end")[:-1] + "'"))
+                try:
+                    f.write(eval("b'" + e.get("0.0", "end")[:-1] + "'"))
+                    issave = True
+                except SyntaxError:
+                    tk.messagebox.showerror(lang["error"], lang["encoding_error"])
         else:
             if encoding.get() == "auto":
                 with open(file_url, "w", encoding=file_coding, errors="ignore" if ignore.get() else None) as f:
                     try:
                         f.write(e.get("0.0", "end")[:-1])
+                        issave = True
                     except UnicodeEncodeError:
                         tk.messagebox.showerror(lang["error"], lang["encoding_error"])
             else:
                 with open(file_url, "w", encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
                     try:
                         f.write(e.get("0.0", "end")[:-1])
+                        issave = True
                     except UnicodeEncodeError:
                         tk.messagebox.showerror(lang["error"], lang["encoding_error"])
-    del_list = []
-    for key, i in plugins.items():
-        try:
-            for j in i["files"]:
-                if j["position"] == "save":
-                    try:
-                        with open(os.path.join("plugin", key, j["file"]), encoding="utf-8") as f:
-                            if j["wait"]:
-                                exec(f.read(), globals(), locals())
-                            else:
-                                threading.Thread(name=i["name"], target=exec,
-                                                 args=(f.read(), globals(), locals())).start()
-                    except FileNotFoundError:
-                        del_list.append(key)
-        except Exception as err:
-            tk.messagebox.showerror(i["name"], str(err))
-            del_list.append(key)
-    for i in del_list:
-        del plugins[i]
+        return issave
 
 
 def save_as():
+    issave = False
     url = tk.filedialog.asksaveasfilename(title=lang["save_as_title"],
                                           filetypes=[(lang["txt_name"], ".txt"), (lang["all_name"], ".*")])
     if b.get():
         with open(url, "wb") as f:
-            f.write(eval("b'" + e.get("0.0", "end")[:-1] + "'"))
+            try:
+                f.write(eval("b'" + e.get("0.0", "end")[:-1] + "'"))
+                issave = True
+            except SyntaxError:
+                tk.messagebox.showerror(lang["error"], lang["encoding_error"])
     else:
         if encoding.get() == "auto":
             with open(url, 'w', encoding=file_coding, errors="ignore" if ignore.get() else None) as f:
                 try:
                     f.write(e.get("0.0", "end")[:-1])
+                    issave = True
                 except UnicodeEncodeError:
                     tk.messagebox.showerror(lang["error"], lang["encoding_error"])
         else:
             with open(url, 'w', encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
                 try:
                     f.write(e.get("0.0", "end")[:-1])
+                    issave = True
                 except UnicodeEncodeError:
                     tk.messagebox.showerror(lang["error"], lang["encoding_error"])
 
     global file_url
     file_url = url
     window.title(lang["title2"] + file_url)
-    del_list = []
-    for key, i in plugins.items():
-        try:
-            for j in i["files"]:
-                if j["position"] == "save_as":
-                    try:
-                        with open(os.path.join("plugin", key, j["file"]), encoding="utf-8") as f:
-                            if j["wait"]:
-                                exec(f.read(), globals(), locals())
-                            else:
-                                threading.Thread(name=i["name"], target=exec,
-                                                 args=(f.read(), globals(), locals())).start()
-                    except FileNotFoundError:
-                        del_list.append(key)
-        except Exception as err:
-            tk.messagebox.showerror(i["name"], str(err))
-            del_list.append(key)
-    for i in del_list:
-        del plugins[i]
+    return issave
 
 
 @q
@@ -330,6 +300,7 @@ def font_settings():
 
 
 def find_str():
+    # noinspection PyUnusedLocal
     def search(event=None, mark=True):
         key = keyword_text.get()
         if not key:
@@ -576,13 +547,13 @@ def bin_mode():
 
 def write_config(path=os.path.join(os.environ["appdata"], "pynotepad")):
     with open(os.path.join(path, "config.ini"), "w") as f:
-        f.write(str({"font": font,
-                     "wrap": wrap.get(),
-                     "bold": B.get(),
-                     "italic": I.get(),
-                     "underline": U.get(),
-                     "ignore": ignore.get(),
-                     "plugins": plugins}))
+        json.dump({"font": font,
+                   "wrap": wrap.get(),
+                   "bold": B.get(),
+                   "italic": I.get(),
+                   "underline": U.get(),
+                   "ignore": ignore.get(),
+                   "plugins": plugins}, f)
 
 
 def read_config(path=os.path.join(os.environ["appdata"], "pynotepad")):
@@ -590,7 +561,7 @@ def read_config(path=os.path.join(os.environ["appdata"], "pynotepad")):
     global plugins
     if os.path.isdir(path):
         with open(os.path.join(path, "config.ini")) as f:
-            config = eval(f.read())
+            config = json.load(f)
         font = config["font"]
         wrap.set(config["wrap"])
         B.set(config["bold"])
@@ -603,6 +574,54 @@ def read_config(path=os.path.join(os.environ["appdata"], "pynotepad")):
         write_config()
 
 
+def install_plugin(file):
+    with zipfile.ZipFile(file) as f:
+        corrupt_file = f.testzip()
+        if not (corrupt_file is None):
+            tk.messagebox.showerror(lang["error"], lang["corrupt_file"].format(corrupt_file))
+            return
+        plugin_dirname = f.filelist[0].filename.split("/")[0]
+        tempdir = os.path.join(tempfile.gettempdir(), "pynotepad", plugin_dirname)
+        os.makedirs(tempdir)
+        f.extractall(tempdir)
+        try:
+            if os.path.isfile(os.path.join(tempdir, "package.json")):
+                with open(os.path.join(tempdir, "package.json"), encoding="utf-8") as i:
+                    info = json.load(i)
+                keys = ["name", "version", "description", "minsdk", "files", "dependencies"]
+                for i in keys:
+                    if not (i in info):
+                        tk.messagebox.showerror(lang["error"], lang["incorrect_plugin"])
+                        return
+                if "maxsdk" in info:
+                    if version > info["maxsdk"]:
+                        tk.messagebox.showerror(lang["error"], lang["low_plugin"])
+                        return
+                try:
+                    for j in info["files"]:
+                        if j["position"] == "install":
+                            try:
+                                with open(os.path.join("plugin", key, j["file"]), encoding="utf-8") as f:
+                                    if j["wait"]:
+                                        exec(f.read(), globals(), locals())
+                                    else:
+                                        threading.Thread(name=info["name"], target=exec,
+                                                         args=(f.read(), globals(), locals())).start()
+                            except FileNotFoundError:
+                                pass
+                except Exception as err:
+                    tk.messagebox.showerror(info["name"], str(err))
+            f.extractall(".\\plugin")
+        except Exception:
+            fp = io.StringIO()
+            traceback.print_exc(file=fp)
+            message = fp.getvalue()
+            tk.messagebox.showerror(lang["error"], message)
+        else:
+            tk.messagebox.showinfo(lang["finish"], lang["plugin_install_finish"])
+            plugin()
+
+
 def plugin():
     pluginwindow = tk.Toplevel()
     pluginwindow.title(lang["plugin_settings"])
@@ -611,11 +630,6 @@ def plugin():
     pluginwindow.transient(window)
     pluginwindow.geometry("700x350")
     pluginlist = {}
-    for i in os.listdir("plugin"):
-        with open(os.path.join("plugin", i, "package.json"), encoding="utf-8") as f:
-            info = json.loads(f.read())
-            pluginlist[info["name"]] = info
-            pluginlist[info["name"]]["url"] = i
 
     def is_signature(info):
         try:
@@ -658,15 +672,30 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
                         else:
                             no_dependencies.append(i)
                     if no_dependencies:
-                        tk.messagebox.showerror(lang["error"], lang["no_dependencies"] + ",".join(no_dependencies))
+                        tk.messagebox.showerror(lang["error"],
+                                                lang["no_dependencies"].format(",".join(no_dependencies)))
                     else:
+                        try:
+                            for j in info["files"]:
+                                if j["position"] == "enable":
+                                    try:
+                                        with open(os.path.join("plugin", key, j["file"]), encoding="utf-8") as f:
+                                            if j["wait"]:
+                                                exec(f.read(), globals(), locals())
+                                            else:
+                                                threading.Thread(name=info["name"], target=exec,
+                                                                 args=(f.read(), globals(), locals())).start()
+                                    except FileNotFoundError:
+                                        pass
+                        except Exception as err:
+                            tk.messagebox.showerror(info["name"], str(err))
                         plugins[info["url"]] = info
         else:
             del plugins[info["url"]]
         enable_button.config(text=lang["disable"] if info["url"] in plugins.keys() else lang["enable"])
 
     def show_info(e=None):
-        info = pluginlist[pluginchoose.get()]
+        info = pluginlist[pluginchoose.selection_get()]
         pluginname.config(text=info["name"])
         pluginversion.config(text=lang["plugin_version"] + info["version"])
         enable_button.config(text=lang["disable"] if info["url"] in plugins.keys() else lang["enable"])
@@ -678,14 +707,93 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
         e_.insert("end", info["description"])
         e_.config(state='disabled')
 
-    # f_s = tk.Frame(pluginwindow)
-    # s1 = tk.ttk.Scrollbar(f_s, orient=tk.VERTICAL)
-    # pluginchoose = tk.Listbox(f_s, yscrollcommand=s1.set, width=30)
-    # [pluginchoose.insert("end", i) for i in pluginlist.keys()]
-    # f_s.pack(side=tk.LEFT, fill=tk.BOTH)
-    # s1.pack(side=tk.RIGHT, fill=tk.BOTH)
-    # s1.config(command=pluginchoose.yview)
-    # pluginchoose.pack(side=tk.LEFT, fill=tk.BOTH)
+    def install(file=""):
+        if file == "":
+            file = tk.filedialog.askopenfilename(title="选择插件", filetypes=[('插件文件', '.zip')], parent=pluginwindow)
+        install_plugin(file)
+        refresh()
+
+    def delete():
+        info = pluginlist[pluginname.cget("text")]
+        if tk.messagebox.askquestion(lang["title"], lang["delete_warning"]) == "yes":
+            try:
+                for j in info["files"]:
+                    if j["position"] == "delete":
+                        try:
+                            with open(os.path.join("plugin", key, j["file"]), encoding="utf-8") as f:
+                                if j["wait"]:
+                                    exec(f.read(), globals(), locals())
+                                else:
+                                    threading.Thread(name=info["name"], target=exec,
+                                                     args=(f.read(), globals(), locals())).start()
+                        except FileNotFoundError:
+                            pass
+            except Exception as err:
+                tk.messagebox.showerror(info["name"], str(err))
+
+            def rmdir(dir_path):
+                if os.path.isfile(dir_path):
+                    try:
+                        os.remove(dir_path)
+                    except Exception as e:
+                        print(e)
+                elif os.path.isdir(dir_path):
+                    file_list = os.listdir(dir_path)
+                    for file_name in file_list:
+                        rmdir(os.path.join(dir_path, file_name))
+
+            rmdir(os.path.join("plugin", info["url"]))
+            os.rmdir(os.path.join("plugin", info["url"]))
+            del plugins[info["url"]]
+            refresh()
+
+    f_s = tk.Frame(pluginwindow)
+    s1 = tk.ttk.Scrollbar(f_s, orient=tk.VERTICAL)
+    pluginchoose = tk.Listbox(f_s, yscrollcommand=s1.set, width=30)
+
+    def refresh():
+        for i in os.listdir("plugin"):
+            if os.path.isdir(os.path.join("plugin", i)):
+                with open(os.path.join("plugin", i, "package.json"), encoding="utf-8") as f:
+                    info = json.load(f)
+                    pluginlist[info["name"]] = info
+                    pluginlist[info["name"]]["url"] = i
+        if pluginchoose.size() > 0:
+            pluginchoose.delete(0, pluginchoose.size())
+        [pluginchoose.insert("end", j) for j in pluginlist.keys()]
+
+    refresh()
+    f_s.pack(side=tk.LEFT, fill=tk.BOTH)
+    s1.pack(side=tk.RIGHT, fill=tk.BOTH)
+    s1.config(command=pluginchoose.yview)
+    install_button = tk.ttk.Button(f_s, text=lang["install"], command=install).pack()
+    pluginchoose.pack(side=tk.LEFT, fill=tk.BOTH)
+    f1 = tk.Frame(pluginwindow)
+    pluginname = tk.ttk.Label(f1, font=("Microsoft YaHei UI", 15, "bold"))
+    pluginversion = tk.ttk.Label(f1, font=("Microsoft YaHei UI", 10))
+    pluginname.pack()
+    pluginversion.pack()
+    enable_button = tk.ttk.Button(f1, text=lang["enable"], command=enable)
+    enable_button.pack()
+    delete_button = tk.ttk.Button(f1, text=lang["delete"], command=delete).pack()
+    tk.ttk.Label(f1, text=lang["restart_tip"]).pack()
+    f2 = tk.Frame(f1)
+    s2 = tk.ttk.Scrollbar(f2, orient=tk.VERTICAL)
+    e_ = tk.Text(f2, yscrollcommand=s2.set, font=("Microsoft YaHei UI", 10))
+    s2.pack(side=tk.RIGHT, fill=tk.BOTH)
+    s2.config(command=e_.yview)
+    f2.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES)
+    e_.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES)
+    if len(pluginlist) > 0:
+        pluginchoose.selection_set(0)
+        show_info()
+        f1.pack()
+    pluginchoose.bind("<<ListboxSelect>>", show_info)
+    windnd.hook_dropfiles(pluginchoose, func=drop(install))
+
+    # pluginchoose = tk.ttk.Combobox(pluginwindow, width=30, state="readonly")
+    # pluginchoose["values"] = list(pluginlist.keys())
+    # pluginchoose.pack(side=tk.TOP, fill=tk.BOTH)
     # f1 = tk.Frame(pluginwindow)
     # pluginname = tk.ttk.Label(f1, font=("Microsoft YaHei UI", 15, "bold"))
     # pluginversion = tk.ttk.Label(f1, font=("Microsoft YaHei UI", 10))
@@ -702,135 +810,188 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
     # f2.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES)
     # e_.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES)
     # if len(pluginlist) > 0:
-    #     pluginchoose.selection_set(0)
+    #     pluginchoose.set(list(pluginlist.keys())[0])
     #     show_info()
     #     f1.pack()
-    # pluginchoose.bind("<<ListboxSelect>>", show_info)
-    pluginchoose = tk.ttk.Combobox(pluginwindow, width=30, state="readonly")
-    pluginchoose["values"] = list(pluginlist.keys())
-    pluginchoose.pack(side=tk.TOP, fill=tk.BOTH)
-    f1 = tk.Frame(pluginwindow)
-    pluginname = tk.ttk.Label(f1, font=("Microsoft YaHei UI", 15, "bold"))
-    pluginversion = tk.ttk.Label(f1, font=("Microsoft YaHei UI", 10))
-    pluginname.pack()
-    pluginversion.pack()
-    enable_button = tk.ttk.Button(f1, text=lang["enable"], command=enable)
-    enable_button.pack()
-    tk.ttk.Label(f1, text=lang["restart_tip"]).pack()
-    f2 = tk.Frame(f1)
-    s2 = tk.ttk.Scrollbar(f2, orient=tk.VERTICAL)
-    e_ = tk.Text(f2, yscrollcommand=s2.set, font=("Microsoft YaHei UI", 10))
-    s2.pack(side=tk.RIGHT, fill=tk.BOTH)
-    s2.config(command=e_.yview)
-    f2.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES)
-    e_.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES)
-    if len(pluginlist) > 0:
-        pluginchoose.set(list(pluginlist.keys())[0])
-        show_info()
-        f1.pack()
-    pluginchoose.bind("<<ComboboxSelected>>", show_info)
-
-
-def draggable(tkwidget):
-    def mousedown(event):
-        widget = event.widget
-        widget.startx = event.x
-        widget.starty = event.y
-
-    def drag(event):
-        widget = event.widget
-        dx = event.x - widget.startx
-        dy = event.y - widget.starty
-        # winfo_x(),winfo_y() 方法获取控件的坐标
-        if isinstance(widget, tk.Wm):
-            widget.geometry("+%d+%d" % (widget.winfo_x() + dx,
-                                        widget.winfo_y() + dy))
-        else:
-            widget.place(x=widget.winfo_x() + dx,
-                         y=widget.winfo_y() + dy)
-
-    tkwidget.bind("<Button-1>", mousedown, add='+')
-    tkwidget.bind("<B1-Motion>", drag, add='+')
+    # pluginchoose.bind("<<ComboboxSelected>>", show_info)
 
 
 def topmost():
     window.wm_attributes('-topmost', top.get())
 
 
+version = 3.9
+update_date = "2023/2/18"
+debug_mode = False
 font = ("Microsoft YaHei UI", 10, "")
-encodings = ["GBK", "UTF-8", "UTF-16", "BIG5"]
+encodings = ["GBK", "UTF-8", "UTF-16", "BIG5", "shift_jis"]
 file_coding = encodings[0]
-lang = {"title": "Pynotepad",
-        "title2": "Pynotepad - ",
-        "ico": r'ico\Notepad.ico',
-        "file": ("文件(F)", 3),
-        "new": ("新建(N)", 3),
-        "open": ("打开(O)...", 3),
-        "save": ("保存(S)", 3),
-        "save_as": ("另存为(A)...", 4),
-        "print": ("打印(P)", 3),
-        "plugin": ("插件(L)", 3),
-        "exit": ("退出(X)", 3),
-        "undo": ("撤销(U)", 3),
-        "redo": ("重做(R)", 3),
-        "cut": ("剪切(T)", 3),
-        "copy": ("复制(C)", 3),
-        "paste": ("粘贴(P)", 3),
-        "del": ("删除(D)", 3),
-        "sel_all": ("全选(A)", 3),
-        "find": ("查找(F)...", 3),
-        "replace": ("替换(R)...", 3),
-        "edit": ("编辑(E)", 3),
-        "file_info": ("文件信息(I)", 5),
-        "file_infos": ("编码", "行数", "大小"),
-        "font": ("字体(F)...", 3),
-        "wrap": ("自动换行(W)", 5),
-        "view": ("查看(V)", 3),
-        "encoding_auto": ("自动检测(A)", 5),
-        "ignore": ("忽略错误(I)", 5),
-        "bin": ("二进制模式(B)", 6),
-        "encoding": ("编码(E)", 3),
-        "info": ("关于(I)", 3),
-        "copyright": ("版权信息(C)", 5),
-        "help": ("帮助(H)", 3),
-        "options": "选项: ",
-        "use_regexpr": "使用正则表达式",
-        "match_case": "区分大小写",
-        "use_escape_char": "使用转义字符",
-        "replace_tip": "替换为:",
-        "find_tip": "查找内容:",
-        "find_next": "查找下一个",
-        "replace1": "替换",
-        "replace_all": "全部替换",
-        "error": "错误",
-        "find1": "查找",
-        "warning": "警告",
-        "plugin_settings": "插件设置",
-        "enable": "启用",
-        "update": "更新配置文件",
-        "enable_warning": "启用恶意插件会导致您的计算机损坏, 是否继续?",
-        "disable": "禁用",
-        "plugin_version": "版本: ",
-        "restart_tip": "提示: 插件更改后重启软件才能生效!",
-        "font_settings": "字体设置",
-        "font_setting": ("字体(F)", 3),
-        "size_setting": ("大小(S)", 3),
-        "bold": ("加粗(B)", 3),
-        "italic": ("斜体(I)", 3),
-        "underline": ("下划线(U)", 4),
-        "font_effect": ("显示效果(E)", 5),
-        "print_button": "打印",
-        "sel_printer": "选择打印机",
-        "print_file": "打印文件",
-        "encoding_error": "编码错误, 可能是此编码不支持这串文本, 请到编码菜单换一种编码!",
-        "txt_name": "文本文档",
-        "all_name": "所有类型",
-        "save_as_title": "另存为",
-        "decoding_error": "解码错误, 请到编码菜单换一种编码!",
-        "open_file_title": "打开文件",
-        "ask_save": "你想将更改保存吗?",
-        "no_dependencies": "缺少依赖项: ",
-        "topmost": ("窗口置顶(T)", 5)}
+Chinese = {"title": "Pynotepad",
+           "title2": "Pynotepad - ",
+           "ico": r'ico\Notepad.ico',
+           "file": ("文件(F)", 3),
+           "new": ("新建(N)", 3),
+           "open": ("打开(O)...", 3),
+           "save": ("保存(S)", 3),
+           "save_as": ("另存为(A)...", 4),
+           "print": ("打印(P)", 3),
+           "plugin": ("插件(L)", 3),
+           "exit": ("退出(X)", 3),
+           "undo": ("撤销(U)", 3),
+           "redo": ("重做(R)", 3),
+           "cut": ("剪切(T)", 3),
+           "copy": ("复制(C)", 3),
+           "paste": ("粘贴(P)", 3),
+           "del": ("删除(D)", 3),
+           "sel_all": ("全选(A)", 3),
+           "find": ("查找(F)...", 3),
+           "replace": ("替换(R)...", 3),
+           "edit": ("编辑(E)", 3),
+           "file_info": ("文件信息(I)", 5),
+           "file_infos": ("编码", "行数", "大小"),
+           "font": ("字体(F)...", 3),
+           "wrap": ("自动换行(W)", 5),
+           "view": ("查看(V)", 3),
+           "encoding_auto": ("自动检测(A)", 5),
+           "ignore": ("忽略错误(I)", 5),
+           "bin": ("二进制模式(B)", 6),
+           "encoding": ("编码(E)", 3),
+           "info": ("关于(I)", 3),
+           "copyright": ("版权信息(C)", 5),
+           "help": ("帮助(H)", 3),
+           "options": "选项: ",
+           "use_regexpr": "使用正则表达式",
+           "match_case": "区分大小写",
+           "use_escape_char": "使用转义字符",
+           "replace_tip": "替换为:",
+           "find_tip": "查找内容:",
+           "find_next": "查找下一个",
+           "replace1": "替换",
+           "replace_all": "全部替换",
+           "error": "错误",
+           "find1": "查找",
+           "warning": "警告",
+           "plugin_settings": "插件设置",
+           "enable": "启用",
+           "update": "更新配置文件",
+           "enable_warning": "启用恶意插件会导致您的计算机损坏, 是否继续?",
+           "disable": "禁用",
+           "plugin_version": "版本: ",
+           "restart_tip": "提示: 插件更改后重启软件才能生效!",
+           "font_settings": "字体设置",
+           "font_setting": ("字体(F)", 3),
+           "size_setting": ("大小(S)", 3),
+           "bold": ("加粗(B)", 3),
+           "italic": ("斜体(I)", 3),
+           "underline": ("下划线(U)", 4),
+           "font_effect": ("显示效果(E)", 5),
+           "print_button": "打印",
+           "sel_printer": "选择打印机",
+           "print_file": "打印文件",
+           "encoding_error": "编码错误, 可能是此编码不支持这串文本, 请到编码菜单换一种编码!",
+           "txt_name": "文本文档",
+           "all_name": "所有类型",
+           "save_as_title": "另存为",
+           "decoding_error": "解码错误, 请到编码菜单换一种编码!",
+           "open_file_title": "打开文件",
+           "ask_save": "你想将更改保存吗?",
+           "no_dependencies": "缺少依赖项: {}",
+           "topmost": ("窗口置顶(T)", 5),
+           "copyright_info": "copyright © gyc 2020-{}",
+           "corrupt_file": "损坏的文件: {}",
+           "incorrect_plugin": "不是正确的插件!",
+           "low_plugin": "此插件适用于低版本的pynotepad，当前版本过高!",
+           "plugin_install_finish": "插件安装完成!",
+           "install": "安装插件",
+           "finish": "完成",
+           "delete": "删除",
+           "delete_warning": "是否要删除这个插件?"}
+English = {"title": "Pynotepad",
+           "title2": "Pynotepad - ",
+           "ico": r'ico\Notepad.ico',
+           "file": ("File", 0),
+           "new": ("New", 0),
+           "open": ("Open", 0),
+           "save": ("Save", 0),
+           "save_as": ("Save As", 5),
+           "print": ("Print", 0),
+           "plugin": ("Plugin", 1),
+           "exit": ("Exit", 1),
+           "undo": ("Undo", 0),
+           "redo": ("Redo", 0),
+           "cut": ("Cut", 2),
+           "copy": ("Copy", 0),
+           "paste": ("Paste", 0),
+           "del": ("Delete", 0),
+           "sel_all": ("Select All", 7),
+           "find": ("Find...", 0),
+           "replace": ("Replace...", 0),
+           "edit": ("Edit", 0),
+           "file_info": ("File Info", 5),
+           "file_infos": ("Encoding", "Row for total", "Size"),
+           "font": ("Font...", 0),
+           "wrap": ("Wrap", 0),
+           "view": ("View", 0),
+           "encoding_auto": ("Auto", 0),
+           "ignore": ("Ignore Error", 0),
+           "bin": ("Bin mode", 0),
+           "encoding": ("Encoding", 0),
+           "info": ("Info", 0),
+           "copyright": ("Copyright", 0),
+           "help": ("Help", 0),
+           "options": "Options: ",
+           "use_regexpr": "Use Regular Expressions",
+           "match_case": "Match Case",
+           "use_escape_char": "Use Escape Char",
+           "replace_tip": "Replace With:",
+           "find_tip": "Find What:",
+           "find_next": "Find Next",
+           "replace1": "Replace",
+           "replace_all": "Replace All",
+           "error": "Error",
+           "find1": "Find",
+           "warning": "Warning",
+           "plugin_settings": "Plugin Settings",
+           "enable": "Enable",
+           "update": "Update Profile",
+           "enable_warning": "Enable malicious plugins will damage your computer. Do you want to continue?",
+           "disable": "Disable",
+           "plugin_version": "Version: ",
+           "restart_tip": "Prompt: Restart the software to take effect after the plugin is changed!",
+           "font_settings": "Font Settings",
+           "font_setting": ("Font", 0),
+           "size_setting": ("Size", 0),
+           "bold": ("Bold", 0),
+           "italic": ("Italic", 0),
+           "underline": ("Underline", 0),
+           "font_effect": ("Font Effect", 5),
+           "print_button": "Print",
+           "sel_printer": "Select Printer:",
+           "print_file": "Print File",
+           "encoding_error": "Encoding error. This encoding may not support this string of text. Please go to the encoding menu to change the encoding!",
+           "txt_name": "Text Document",
+           "all_name": "All Types",
+           "save_as_title": "Save As",
+           "decoding_error": "Decoding error, please go to the encoding menu to change the decoding method!",
+           "open_file_title": "Open File",
+           "ask_save": "Do you want to save your changes?",
+           "no_dependencies": "Missing dependencies: {}",
+           "topmost": ("Window Topmost", 7),
+           "copyright_info": "copyright © gyc 2020-{}",
+           "corrupt_file": "Corrupt file: {}",
+           "incorrect_plugin": "Incorrect plugin!",
+           "low_plugin": "This plugin is suitable for low version of pynotepad, the current version is too high!",
+           "plugin_install_finish": "The plugin installation is complete!",
+           "install": "Install Plugin",
+           "finish": "Finish",
+           "delete": "Delete",
+           "delete_warning": "Do you want to delete this plugin?"
+           }
+all_lang = {"zh_CN": Chinese, "en_US": English}
+try:
+    lang = all_lang[locale.windows_locale[win32api.GetUserDefaultLangID()]]
+except KeyError:
+    lang = all_lang["en_US"]
 lang_raw = lang.copy()
 window = tk.Tk()
 window.tk.call('tk', 'scaling', ScaleFactor / 75)
@@ -962,11 +1123,12 @@ encodingmenu.add_checkbutton(label=lang["ignore"][0], variable=ignore, underline
 encodingmenu.add_checkbutton(label=lang["bin"][0], variable=b, underline=lang["bin"][1], command=bin_mode)
 menubar.add_cascade(label=lang["encoding"][0], menu=encodingmenu, underline=lang["encoding"][1])
 infomenu = tk.Menu(menubar, tearoff=0)
-infomenu.add_command(label=lang["info"][0], command=lambda: tk.messagebox.showinfo(lang["title"], "v3.8 2022/12/5"),
+infomenu.add_command(label=lang["info"][0],
+                     command=lambda: tk.messagebox.showinfo(lang["title"], "v{} {}".format(version, update_date)),
                      underline=lang["info"][1])
 infomenu.add_command(label=lang["copyright"][0],
                      command=lambda: tk.messagebox.showinfo(lang["title"],
-                                                            "copyright © gyc 2020-{}".format(
+                                                            lang["copyright_info"].format(
                                                                 time.localtime(time.time())[0])),
                      underline=lang["copyright"][1])
 menubar.add_cascade(label=lang["help"][0], menu=infomenu, underline=lang["help"][1])
@@ -1000,14 +1162,14 @@ window.bind("<Control-Shift-z>", lambda event: e.edit_redo())
 
 e.bind("<Button-3>", lambda event: contextmenu.post(event.x_root, event.y_root))
 e.bind('<Key>', lambda event: e.edit_separator())
-windnd.hook_dropfiles(e, func=d_open)
+windnd.hook_dropfiles(e, func=drop(open_file))
 window.config(menu=menubar)
 window.protocol('WM_DELETE_WINDOW', exit_window)
 del_list = []
 for key, i in plugins.items():
     try:
         for j in i["files"]:
-            if j["position"] == "ok":
+            if j["position"] == "main":
                 try:
                     with open(os.path.join("plugin", key, j["file"]), encoding="utf-8") as f:
                         if j["wait"]:
