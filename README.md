@@ -19,7 +19,7 @@ Pynotepad is a text editor coding in python language.It supports more encoding, 
 # If you want to run the source code
 1. Download or Git this depository.
 2. Open the "Command prompt".
-3. Type "cd <your folder>".
+3. Type "cd [your folder]".
 4. Type "python -m pip install -r requirements.txt".
 5. Type "python main.py".
 6. Done!
