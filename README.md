@@ -1,6 +1,10 @@
 # pynotepad
 
 Pynotepad is a text editor coding in python language.It supports more encoding, Plugin function is also supported.
+![GitHub last commit (by committer)](https://img.shields.io/github/last-commit/gyc123456-1/pynotepad)![GitHub Release Date - Published_At](https://img.shields.io/github/release-date/gyc123456-1/pynotepad)![GitHub release (with filter)](https://img.shields.io/github/v/release/gyc123456-1/pynotepad)![GitHub all releases](https://img.shields.io/github/downloads/gyc123456-1/pynotepad/total)![GitHub repo size](https://img.shields.io/github/repo-size/gyc123456-1/pynotepad.svg)![GitHub](https://img.shields.io/github/license/gyc123456-1/pynotepad.svg)
+![GitHub top language](https://img.shields.io/github/languages/top/gyc123456-1/pynotepad)![platforms](https://img.shields.io/badge/platform-win32%20%7C%20win64-brightgreen.svg)
+
+
 
 # Usage method
 1. Find and click "Release" on the right.
@@ -13,7 +17,7 @@ Pynotepad is a text editor coding in python language.It supports more encoding, 
 # If you want to run the source code
 1. Download or Git this depository.
 2. Open the "Command prompt".
-3. Type "cd <your folder>".
+3. Type "cd <您的 folder>".
 4. Type "python -m pip install -r requirements.txt".
 5. Type "python main.py".
 6. Done!
