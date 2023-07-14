@@ -1,7 +1,9 @@
 # pynotepad
 
 Pynotepad is a text editor coding in python language.It supports more encoding, Plugin function is also supported.
+
 ![GitHub last commit (by committer)](https://img.shields.io/github/last-commit/gyc123456-1/pynotepad)![GitHub Release Date - Published_At](https://img.shields.io/github/release-date/gyc123456-1/pynotepad)![GitHub release (with filter)](https://img.shields.io/github/v/release/gyc123456-1/pynotepad)![GitHub all releases](https://img.shields.io/github/downloads/gyc123456-1/pynotepad/total)![GitHub repo size](https://img.shields.io/github/repo-size/gyc123456-1/pynotepad.svg)![GitHub](https://img.shields.io/github/license/gyc123456-1/pynotepad.svg)
+
 ![GitHub top language](https://img.shields.io/github/languages/top/gyc123456-1/pynotepad)![platforms](https://img.shields.io/badge/platform-win32%20%7C%20win64-brightgreen.svg)
 
 
