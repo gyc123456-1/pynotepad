@@ -14,9 +14,9 @@ import re
 import os
 import windnd
 import base64
-from Crypto.PublicKey import RSA
-from Crypto.Hash import SHA
-from Crypto.Signature import PKCS1_v1_5 as PKCS1_signature
+from Cryptodome.PublicKey import RSA
+from Cryptodome.Hash import SHA
+from Cryptodome.Signature import PKCS1_v1_5 as PKCS1_signature
 import ctypes
 import locale
 import zipfile
@@ -64,7 +64,7 @@ def q(func):
         if text == e.get("0.0", "end")[:-1]:
             func(*args, **kwargs)
         else:
-            a = tk.messagebox.askyesnocancel(lang["title"], lang["ask_save"])
+            a = tk.messagebox.askyesnocancel(lang["text.gui.title"], lang["text.gui.file.exit_save"])
             if a is None:
                 return
             elif a:
@@ -101,8 +101,8 @@ def drop(func):
 @q
 def open_file(url=""):
     if not url:
-        url = tk.filedialog.askopenfilename(title=lang["open_file_title"],
-                                            filetypes=[(lang["txt_name"], ".txt"), (lang["all_name"], ".*")])
+        url = tk.filedialog.askopenfilename(title=lang["text.gui.file.open.title"],
+                                            filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"), (lang["text.gui.file.open.type.all"], ".*")])
     e.delete('0.0', 'end')
     global file_url
     global file_coding
@@ -125,18 +125,18 @@ def open_file(url=""):
                     except UnicodeError:
                         pass
             else:
-                tk.messagebox.showerror(lang["error"], lang["decoding_error"])
+                tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.decoding.tips.error"])
         else:
             with open(url, encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
                 try:
                     text = f.read()
                     file_coding = encoding.get()
                 except UnicodeDecodeError:
-                    tk.messagebox.showerror(lang["error"], lang["decoding_error"])
+                    tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.decoding.tips.error"])
                 except UnicodeError:
-                    tk.messagebox.showerror(lang["error"], lang["decoding_error"])
+                    tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.decoding.tips.error"])
     file_url = url
-    window.title(lang["title2"] + file_url)
+    window.title(lang["text.gui.title.fileopened"] + file_url)
     e.insert('end', text)
 
 
@@ -153,7 +153,7 @@ def save():
                     f.write(eval("b'" + e.get("0.0", "end")[:-1] + "'"))
                     issave = True
                 except SyntaxError:
-                    tk.messagebox.showerror(lang["error"], lang["encoding_error"])
+                    tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.encoding.tips.error"])
         else:
             if encoding.get() == "auto":
                 with open(file_url, "w", encoding=file_coding, errors="ignore" if ignore.get() else None) as f:
@@ -161,28 +161,28 @@ def save():
                         f.write(e.get("0.0", "end")[:-1])
                         issave = True
                     except UnicodeEncodeError:
-                        tk.messagebox.showerror(lang["error"], lang["encoding_error"])
+                        tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.encoding.tips.error"])
             else:
                 with open(file_url, "w", encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
                     try:
                         f.write(e.get("0.0", "end")[:-1])
                         issave = True
                     except UnicodeEncodeError:
-                        tk.messagebox.showerror(lang["error"], lang["encoding_error"])
+                        tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.encoding.tips.error"])
         return issave
 
 
 def save_as():
     issave = False
-    url = tk.filedialog.asksaveasfilename(title=lang["save_as_title"],
-                                          filetypes=[(lang["txt_name"], ".txt"), (lang["all_name"], ".*")])
+    url = tk.filedialog.asksaveasfilename(title=lang["text.gui.file.save_as.title"],
+                                          filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"), (lang["text.gui.file.open.type.all"], ".*")])
     if b.get():
         with open(url, "wb") as f:
             try:
                 f.write(eval("b'" + e.get("0.0", "end")[:-1] + "'"))
                 issave = True
             except SyntaxError:
-                tk.messagebox.showerror(lang["error"], lang["encoding_error"])
+                tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.encoding.tips.error"])
     else:
         if encoding.get() == "auto":
             with open(url, 'w', encoding=file_coding, errors="ignore" if ignore.get() else None) as f:
@@ -190,18 +190,18 @@ def save_as():
                     f.write(e.get("0.0", "end")[:-1])
                     issave = True
                 except UnicodeEncodeError:
-                    tk.messagebox.showerror(lang["error"], lang["encoding_error"])
+                    tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.encoding.tips.error"])
         else:
             with open(url, 'w', encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
                 try:
                     f.write(e.get("0.0", "end")[:-1])
                     issave = True
                 except UnicodeEncodeError:
-                    tk.messagebox.showerror(lang["error"], lang["encoding_error"])
+                    tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.encoding.tips.error"])
 
     global file_url
     file_url = url
-    window.title(lang["title2"] + file_url)
+    window.title(lang["text.gui.title.fileopened"] + file_url)
     return issave
 
 
@@ -234,10 +234,10 @@ def wrap_():
 def send_printer():
     pt = tk.Toplevel()
     pt.geometry("250x80")
-    pt.title(lang["print_file"])
-    pt.iconbitmap(lang["ico"])
+    pt.title(lang["text.gui.menu.print.title"])
+    pt.iconbitmap(lang["path.gui.ico"])
     printer = tk.StringVar()
-    tk.ttk.Label(pt, text=lang["sel_printer"]).pack()
+    tk.ttk.Label(pt, text=lang["text.gui.menu.print.select"]).pack()
     prcombo = tk.ttk.Combobox(pt, width=35, textvariable=printer, state="readonly")
     print_list = []
     for i in win32print.EnumPrinters(2):
@@ -262,15 +262,15 @@ def send_printer():
         )
         pt.destroy()
 
-    tk.ttk.Button(pt, text=lang["print_button"], command=p).pack()
+    tk.ttk.Button(pt, text=lang["text.gui.menu.print.print"], command=p).pack()
 
 
 def font_settings():
     setings = tk.Toplevel()
     setings.geometry("220x20")
-    setings.title(lang["font_settings"])
+    setings.title(lang["text.gui.menu.font.title"])
     setings.resizable(False, False)
-    setings.iconbitmap(lang["ico"])
+    setings.iconbitmap(lang["path.gui.ico"])
     setings.transient(window)
     menubar = tk.Menu(setings)
     fontnamemenu = tk.Menu(menubar, tearoff=0)
@@ -282,20 +282,20 @@ def font_settings():
                                          columnbreak=True)
         else:
             fontnamemenu.add_radiobutton(label=i, variable=fontname, value=i, command=font_, font=(i, 10))
-    menubar.add_cascade(label=lang["font_setting"][0], menu=fontnamemenu, underline=lang["font_setting"][1])
+    menubar.add_cascade(label=lang["text.gui.menu.font.menu.font"][0], menu=fontnamemenu, underline=lang["text.gui.menu.font.menu.font"][1])
     fontsizemenu = tk.Menu(menubar, tearoff=0)
     for i in range(10, 51):
         if i - 10 != 0 and (i - 10) % 10 == 0:
             fontsizemenu.add_radiobutton(label=str(i), variable=fontsize, value=i, command=font_, columnbreak=True)
         else:
             fontsizemenu.add_radiobutton(label=str(i), variable=fontsize, value=i, command=font_)
-    menubar.add_cascade(label=lang["size_setting"][0], menu=fontsizemenu, underline=lang["size_setting"][1])
+    menubar.add_cascade(label=lang["text.gui.menu.font.menu.font_size"][0], menu=fontsizemenu, underline=lang["text.gui.menu.font.menu.font_size"][1])
     fonteffectmenu = tk.Menu(menubar, tearoff=0)
-    fonteffectmenu.add_checkbutton(label=lang["bold"][0], variable=B, underline=lang["bold"][1], command=font_)
-    fonteffectmenu.add_checkbutton(label=lang["italic"][0], variable=I, underline=lang["italic"][1], command=font_)
-    fonteffectmenu.add_checkbutton(label=lang["underline"][0], variable=U, underline=lang["underline"][1],
+    fonteffectmenu.add_checkbutton(label=lang["text.gui.menu.font.menu.font_effect.bold"][0], variable=B, underline=lang["text.gui.menu.font.menu.font_effect.bold"][1], command=font_)
+    fonteffectmenu.add_checkbutton(label=lang["text.gui.menu.font.menu.font_effect.italic"][0], variable=I, underline=lang["text.gui.menu.font.menu.font_effect.italic"][1], command=font_)
+    fonteffectmenu.add_checkbutton(label=lang["text.gui.menu.font.menu.font_effect.underline"][0], variable=U, underline=lang["text.gui.menu.font.menu.font_effect.underline"][1],
                                    command=font_)
-    menubar.add_cascade(label=lang["font_effect"][0], menu=fonteffectmenu, underline=lang["font_effect"][1])
+    menubar.add_cascade(label=lang["text.gui.menu.font.menu.font_effect"][0], menu=fonteffectmenu, underline=lang["text.gui.menu.font.menu.font_effect"][1])
     setings.config(menu=menubar)
 
 
@@ -309,13 +309,13 @@ def find_str():
             try:
                 key = eval('"""' + key + '"""')
             except Exception as err:
-                tk.messagebox.showerror(lang["error"], str(err))
+                tk.messagebox.showerror(lang["text.gui.msg.title.error"], str(err))
                 return
         if use_regexpr.get():
             try:
                 re.compile(key)
             except re.error as err:
-                tk.messagebox.showerror(lang["error"], str(err))
+                tk.messagebox.showerror(lang["text.gui.msg.title.error"], str(err))
                 return
         # end-1c:忽略末尾换行符
         pos = e.search(key, tk.INSERT, 'end-1c', regexp=use_regexpr.get(), nocase=not match_case.get())
@@ -355,15 +355,15 @@ def find_str():
         e.focus_force()
 
     find_window = tk.Toplevel()
-    find_window.title(lang["replace1"])
+    find_window.title(lang["text.gui.menu.find.find"])
     find_window.resizable(False, False)
-    find_window.iconbitmap(lang["ico"])
+    find_window.iconbitmap(lang["path.gui.ico"])
     find_window.transient(window)
     frame = tk.Frame(find_window)
-    tk.ttk.Button(frame, text=lang["find_next"], command=findnext).pack()
+    tk.ttk.Button(frame, text=lang["text.gui.menu.find.find_next"], command=findnext).pack()
     frame.pack(side=tk.RIGHT, fill=tk.Y)
     inputbox = tk.Frame(find_window)
-    tk.ttk.Label(inputbox, text=lang["find_tip"]).pack(side=tk.LEFT)
+    tk.ttk.Label(inputbox, text=lang["text.gui.menu.find.find_text"]).pack(side=tk.LEFT)
     keyword_text = tk.StringVar()
     keyword = tk.ttk.Entry(inputbox, textvariable=keyword_text)
     keyword.pack(side=tk.LEFT, expand=True, fill=tk.X)
@@ -371,13 +371,16 @@ def find_str():
     keyword.focus_force()
     inputbox.pack(fill=tk.X)
     options = tk.Frame(find_window)
-    tk.ttk.Label(options, text=lang["options"]).pack(side=tk.LEFT)
+    tk.ttk.Label(options, text=lang["text.gui.menu.find.options"]).pack(side=tk.LEFT)
     use_regexpr = tk.BooleanVar()
-    tk.ttk.Checkbutton(options, text=lang["use_regexpr"], variable=use_regexpr).pack(side=tk.LEFT)
+    tk.ttk.Checkbutton(options, text=lang["text.gui.menu.find.options.use_regexpr"], variable=use_regexpr).pack(
+        side=tk.LEFT)
     match_case = tk.BooleanVar()
-    tk.ttk.Checkbutton(options, text=lang["match_case"], variable=match_case).pack(side=tk.LEFT)
+    tk.ttk.Checkbutton(options, text=lang["text.gui.menu.find.options.match_case"], variable=match_case).pack(
+        side=tk.LEFT)
     use_escape_char = tk.BooleanVar()
-    tk.ttk.Checkbutton(options, text=lang["use_escape_char"], variable=use_escape_char).pack(side=tk.LEFT)
+    tk.ttk.Checkbutton(options, text=lang["text.gui.menu.find.options.use_escape_char"], variable=use_escape_char).pack(
+        side=tk.LEFT)
     options.pack(fill=tk.X)
 
 
@@ -390,13 +393,13 @@ def replace_str():
             try:
                 key = eval('"""' + key + '"""')
             except Exception as err:
-                tk.messagebox.showerror(lang["error"], str(err))
+                tk.messagebox.showerror(lang["text.gui.msg.title.error"], str(err))
                 return
         if use_regexpr.get():
             try:
                 re.compile(key)
             except re.error as err:
-                tk.messagebox.showerror(lang["error"], str(err))
+                tk.messagebox.showerror(lang["text.gui.msg.title.error"], str(err))
                 return
         # end-1c:忽略末尾换行符
         pos = e.search(key, tk.INSERT, 'end-1c', regexp=use_regexpr.get(), nocase=not match_case.get())
@@ -461,7 +464,7 @@ def replace_str():
                 old = e.get(pos, newpos)
                 newtext = re.sub(keyword_text.get(), newtext, old)
         except Exception as err:
-            tk.messagebox.showerror(lang["error"], str(err))
+            tk.messagebox.showerror(lang["text.gui.msg.title.error"], str(err))
             return
         e.delete(pos, newpos)
         e.insert(pos, newtext)
@@ -489,17 +492,17 @@ def replace_str():
             last = ln, col
 
     find_window = tk.Toplevel()
-    find_window.title(lang["replace1"])
+    find_window.title(lang["text.gui.menu.replace.replace"])
     find_window.resizable(False, False)
-    find_window.iconbitmap(lang["ico"])
+    find_window.iconbitmap(lang["path.gui.ico"])
     find_window.transient(window)
     frame = tk.Frame(find_window)
-    tk.ttk.Button(frame, text=lang["find_next"], command=_findnext).pack()
-    tk.ttk.Button(frame, text=lang["replace1"], command=replace_f).pack()
-    tk.ttk.Button(frame, text=lang["replace_all"], command=replace_all).pack()
+    tk.ttk.Button(frame, text=lang["text.gui.menu.find.find_next"], command=_findnext).pack()
+    tk.ttk.Button(frame, text=lang["text.gui.menu.replace.replace"], command=replace_f).pack()
+    tk.ttk.Button(frame, text=lang["text.gui.menu.replace.replace_all"], command=replace_all).pack()
     frame.pack(side=tk.RIGHT, fill=tk.Y)
     inputbox = tk.Frame(find_window)
-    tk.ttk.Label(inputbox, text=lang["find_tip"]).pack(side=tk.LEFT)
+    tk.ttk.Label(inputbox, text=lang["text.gui.menu.find.find_text"]).pack(side=tk.LEFT)
     keyword_text = tk.StringVar()
     keyword = tk.ttk.Entry(inputbox, textvariable=keyword_text)
     keyword.pack(side=tk.LEFT, expand=True, fill=tk.X)
@@ -507,7 +510,7 @@ def replace_str():
     inputbox.pack(fill=tk.X)
 
     replace = tk.Frame(find_window)
-    tk.ttk.Label(replace, text=lang["replace_tip"]).pack(side=tk.LEFT)
+    tk.ttk.Label(replace, text=lang["text.gui.menu.replace.replace_with"]).pack(side=tk.LEFT)
     text_to_replace = tk.StringVar()
     replace_text = tk.ttk.Entry(replace, textvariable=text_to_replace)
     replace_text.pack(side=tk.LEFT, expand=True, fill=tk.X)
@@ -515,13 +518,16 @@ def replace_str():
     replace.pack(fill=tk.X)
 
     options = tk.Frame(find_window)
-    tk.ttk.Label(options, text=lang["options"]).pack(side=tk.LEFT)
+    tk.ttk.Label(options, text=lang["text.gui.menu.find.options"]).pack(side=tk.LEFT)
     use_regexpr = tk.BooleanVar()
-    tk.ttk.Checkbutton(options, text=lang["use_regexpr"], variable=use_regexpr).pack(side=tk.LEFT)
+    tk.ttk.Checkbutton(options, text=lang["text.gui.menu.find.options.use_regexpr"], variable=use_regexpr).pack(
+        side=tk.LEFT)
     match_case = tk.BooleanVar()
-    tk.ttk.Checkbutton(options, text=lang["match_case"], variable=match_case).pack(side=tk.LEFT)
+    tk.ttk.Checkbutton(options, text=lang["text.gui.menu.find.options.match_case"], variable=match_case).pack(
+        side=tk.LEFT)
     use_escape_char = tk.BooleanVar()
-    tk.ttk.Checkbutton(options, text=lang["use_escape_char"], variable=use_escape_char).pack(side=tk.LEFT)
+    tk.ttk.Checkbutton(options, text=lang["text.gui.menu.find.options.use_escape_char"], variable=use_escape_char).pack(
+        side=tk.LEFT)
     options.pack(fill=tk.X)
 
 
@@ -578,24 +584,41 @@ def install_plugin(file):
     with zipfile.ZipFile(file) as f:
         corrupt_file = f.testzip()
         if not (corrupt_file is None):
-            tk.messagebox.showerror(lang["error"], lang["corrupt_file"].format(corrupt_file))
+            tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.menu.plugin.file.invalid"].format(corrupt_file))
             return
         plugin_dirname = f.filelist[0].filename.split("/")[0]
+
+        def rmdir(dir_path):
+            if os.path.isfile(dir_path):
+                try:
+                    os.remove(dir_path)
+                except Exception as e:
+                    print(e)
+            elif os.path.isdir(dir_path):
+                file_list = os.listdir(dir_path)
+                for file_name in file_list:
+                    rmdir(os.path.join(dir_path, file_name))
+                os.rmdir(dir_path)
+
         tempdir = os.path.join(tempfile.gettempdir(), "pynotepad", plugin_dirname)
-        os.makedirs(tempdir)
+        try:
+            os.makedirs(tempdir)
+        except FileExistsError:
+            rmdir(tempdir)
+            os.makedirs(tempdir)
         f.extractall(tempdir)
         try:
-            if os.path.isfile(os.path.join(tempdir, "package.json")):
-                with open(os.path.join(tempdir, "package.json"), encoding="utf-8") as i:
+            if os.path.isfile(os.path.join(tempdir, plugin_dirname, "package.json")):
+                with open(os.path.join(tempdir, plugin_dirname, "package.json"), encoding="utf-8") as i:
                     info = json.load(i)
                 keys = ["name", "version", "description", "minsdk", "files", "dependencies"]
                 for i in keys:
                     if not (i in info):
-                        tk.messagebox.showerror(lang["error"], lang["incorrect_plugin"])
+                        tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.menu.plugin.plugin.invalid"])
                         return
                 if "maxsdk" in info:
                     if version > info["maxsdk"]:
-                        tk.messagebox.showerror(lang["error"], lang["low_plugin"])
+                        tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.menu.plugin.plugin.old"])
                         return
                 try:
                     for j in info["files"]:
@@ -611,22 +634,23 @@ def install_plugin(file):
                                 pass
                 except Exception as err:
                     tk.messagebox.showerror(info["name"], str(err))
-            f.extractall(".\\plugin")
-        except Exception:
-            fp = io.StringIO()
-            traceback.print_exc(file=fp)
-            message = fp.getvalue()
-            tk.messagebox.showerror(lang["error"], message)
+                f.extractall(".\\plugin")
+            else:
+                tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.menu.plugin.plugin.invalid"])
+                return
+        except Exception as e:
+            tk.messagebox.showerror(lang["text.gui.msg.title.error"], e)
         else:
-            tk.messagebox.showinfo(lang["finish"], lang["plugin_install_finish"])
-            plugin()
+            tk.messagebox.showinfo(lang["text.gui.menu.plugin.install.finish.title"], lang["text.gui.menu.plugin.install.finish"])
+
+        rmdir(tempdir)
 
 
 def plugin():
     pluginwindow = tk.Toplevel()
-    pluginwindow.title(lang["plugin_settings"])
+    pluginwindow.title(lang["text.gui.menu.plugin.title"])
     pluginwindow.resizable(False, False)
-    pluginwindow.iconbitmap(lang["ico"])
+    pluginwindow.iconbitmap(lang["path.gui.ico"])
     pluginwindow.transient(window)
     pluginwindow.geometry("700x350")
     pluginlist = {}
@@ -650,7 +674,7 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
 -----END PUBLIC KEY-----"""
             a = False
             for i in info["files"]:
-                with open(os.path.join("plugin", info["url"], i["file"])) as f:
+                with open(os.path.join("plugin", info["path"], i["file"])) as f:
                     rdata = f.read()
                 a = rsa_public_check_sign(rdata, i["sign"], pubkey)
             return a
@@ -659,11 +683,13 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
 
     def enable():
         info = pluginlist[pluginname.cget("text")]
-        if enable_button.cget("text") == lang["enable"] or enable_button.cget("text") == lang["update"]:
+        if enable_button.cget("text") == lang["text.gui.menu.plugin.enable"] or enable_button.cget("text") == lang[
+            "text.gui.menu.plugin.profile.update"]:
             if is_signature(info):
-                plugins[info["url"]] = info
+                plugins[info["path"]] = info
             else:
-                if tk.messagebox.askquestion(lang["warning"], lang["enable_warning"]) == "yes":
+                if tk.messagebox.askquestion(lang["text.gui.msg.title.warning"],
+                                             lang["text.gui.msg.plugin.enable_warning"]) == "yes":
                     no_dependencies = []
                     for i in info["dependencies"]:
                         for j in plugins.values():
@@ -672,8 +698,8 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
                         else:
                             no_dependencies.append(i)
                     if no_dependencies:
-                        tk.messagebox.showerror(lang["error"],
-                                                lang["no_dependencies"].format(",".join(no_dependencies)))
+                        tk.messagebox.showerror(lang["text.gui.msg.title.error"],
+                                                lang["text.gui.menu.plugins.tips.no_dependencies"].format(",".join(no_dependencies)))
                     else:
                         try:
                             for j in info["files"]:
@@ -689,19 +715,21 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
                                         pass
                         except Exception as err:
                             tk.messagebox.showerror(info["name"], str(err))
-                        plugins[info["url"]] = info
+                        plugins[info["path"]] = info
         else:
-            del plugins[info["url"]]
-        enable_button.config(text=lang["disable"] if info["url"] in plugins.keys() else lang["enable"])
+            del plugins[info["path"]]
+        enable_button.config(text=lang["text.gui.menu.plugin.disable"] if info["path"] in plugins.keys() else lang[
+            "text.gui.menu.plugin.enable"])
 
     def show_info(e=None):
         info = pluginlist[pluginchoose.selection_get()]
         pluginname.config(text=info["name"])
-        pluginversion.config(text=lang["plugin_version"] + info["version"])
-        enable_button.config(text=lang["disable"] if info["url"] in plugins.keys() else lang["enable"])
-        if enable_button.cget("text") == lang["disable"]:
-            if plugins[info["url"]] != info:
-                enable_button.config(text=lang["update"])
+        pluginversion.config(text=lang["text.gui.menu.plugin.version_tip"] + info["version"])
+        enable_button.config(text=lang["text.gui.menu.plugin.disable"] if info["path"] in plugins.keys() else lang[
+            "text.gui.menu.plugin.enable"])
+        if enable_button.cget("text") == lang["text.gui.menu.plugin.disable"]:
+            if plugins[info["path"]] != info:
+                enable_button.config(text=lang["text.gui.menu.plugin.profile.update"])
         e_.config(state='normal')
         e_.delete("0.0", "end")
         e_.insert("end", info["description"])
@@ -711,16 +739,17 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
         if file == "":
             file = tk.filedialog.askopenfilename(title="选择插件", filetypes=[('插件文件', '.zip')], parent=pluginwindow)
         install_plugin(file)
-        refresh()
+        pluginwindow.destroy()
+        plugin()
 
     def delete():
         info = pluginlist[pluginname.cget("text")]
-        if tk.messagebox.askquestion(lang["title"], lang["delete_warning"]) == "yes":
+        if tk.messagebox.askquestion(lang["text.gui.title"], lang["text.gui.menu.plugin.delete.warning"]) == "yes":
             try:
                 for j in info["files"]:
                     if j["position"] == "delete":
                         try:
-                            with open(os.path.join("plugin", key, j["file"]), encoding="utf-8") as f:
+                            with open(os.path.join("plugin", info["path"], j["file"]), encoding="utf-8") as f:
                                 if j["wait"]:
                                     exec(f.read(), globals(), locals())
                                 else:
@@ -741,42 +770,39 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
                     file_list = os.listdir(dir_path)
                     for file_name in file_list:
                         rmdir(os.path.join(dir_path, file_name))
+                    os.rmdir(dir_path)
 
-            rmdir(os.path.join("plugin", info["url"]))
-            os.rmdir(os.path.join("plugin", info["url"]))
-            del plugins[info["url"]]
-            refresh()
+            rmdir(os.path.join("plugin", info["path"]))
+            del pluginlist[info["path"]]
+            pluginwindow.destroy()
+            plugin()
 
     f_s = tk.Frame(pluginwindow)
     s1 = tk.ttk.Scrollbar(f_s, orient=tk.VERTICAL)
     pluginchoose = tk.Listbox(f_s, yscrollcommand=s1.set, width=30)
-
-    def refresh():
-        for i in os.listdir("plugin"):
-            if os.path.isdir(os.path.join("plugin", i)):
-                with open(os.path.join("plugin", i, "package.json"), encoding="utf-8") as f:
-                    info = json.load(f)
-                    pluginlist[info["name"]] = info
-                    pluginlist[info["name"]]["url"] = i
-        if pluginchoose.size() > 0:
-            pluginchoose.delete(0, pluginchoose.size())
-        [pluginchoose.insert("end", j) for j in pluginlist.keys()]
-
-    refresh()
+    for i in os.listdir("plugin"):
+        if os.path.isdir(os.path.join("plugin", i)):
+            with open(os.path.join("plugin", i, "package.json"), encoding="utf-8") as f:
+                info = json.load(f)
+                pluginlist[info["name"]] = info
+                pluginlist[info["name"]]["path"] = i
+    if pluginchoose.size() > 0:
+        pluginchoose.delete(0, pluginchoose.size())
+    [pluginchoose.insert("end", j) for j in pluginlist.keys()]
     f_s.pack(side=tk.LEFT, fill=tk.BOTH)
     s1.pack(side=tk.RIGHT, fill=tk.BOTH)
     s1.config(command=pluginchoose.yview)
-    install_button = tk.ttk.Button(f_s, text=lang["install"], command=install).pack()
+    install_button = tk.ttk.Button(f_s, text=lang["text.gui.menu.plugin.install"], command=install).pack()
     pluginchoose.pack(side=tk.LEFT, fill=tk.BOTH)
     f1 = tk.Frame(pluginwindow)
     pluginname = tk.ttk.Label(f1, font=("Microsoft YaHei UI", 15, "bold"))
     pluginversion = tk.ttk.Label(f1, font=("Microsoft YaHei UI", 10))
     pluginname.pack()
     pluginversion.pack()
-    enable_button = tk.ttk.Button(f1, text=lang["enable"], command=enable)
+    enable_button = tk.ttk.Button(f1, text=lang["text.gui.menu.plugin.enable"], command=enable)
     enable_button.pack()
-    delete_button = tk.ttk.Button(f1, text=lang["delete"], command=delete).pack()
-    tk.ttk.Label(f1, text=lang["restart_tip"]).pack()
+    delete_button = tk.ttk.Button(f1, text=lang["text.gui.menu.plugin.delete"], command=delete).pack()
+    tk.ttk.Label(f1, text=lang["text.gui.menu.plugin.restart_tip"]).pack()
     f2 = tk.Frame(f1)
     s2 = tk.ttk.Scrollbar(f2, orient=tk.VERTICAL)
     e_ = tk.Text(f2, yscrollcommand=s2.set, font=("Microsoft YaHei UI", 10))
@@ -791,203 +817,24 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
     pluginchoose.bind("<<ListboxSelect>>", show_info)
     windnd.hook_dropfiles(pluginchoose, func=drop(install))
 
-    # pluginchoose = tk.ttk.Combobox(pluginwindow, width=30, state="readonly")
-    # pluginchoose["values"] = list(pluginlist.keys())
-    # pluginchoose.pack(side=tk.TOP, fill=tk.BOTH)
-    # f1 = tk.Frame(pluginwindow)
-    # pluginname = tk.ttk.Label(f1, font=("Microsoft YaHei UI", 15, "bold"))
-    # pluginversion = tk.ttk.Label(f1, font=("Microsoft YaHei UI", 10))
-    # pluginname.pack()
-    # pluginversion.pack()
-    # enable_button = tk.ttk.Button(f1, text=lang["enable"], command=enable)
-    # enable_button.pack()
-    # tk.ttk.Label(f1, text=lang["restart_tip"]).pack()
-    # f2 = tk.Frame(f1)
-    # s2 = tk.ttk.Scrollbar(f2, orient=tk.VERTICAL)
-    # e_ = tk.Text(f2, yscrollcommand=s2.set, font=("Microsoft YaHei UI", 10))
-    # s2.pack(side=tk.RIGHT, fill=tk.BOTH)
-    # s2.config(command=e_.yview)
-    # f2.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES)
-    # e_.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES)
-    # if len(pluginlist) > 0:
-    #     pluginchoose.set(list(pluginlist.keys())[0])
-    #     show_info()
-    #     f1.pack()
-    # pluginchoose.bind("<<ComboboxSelected>>", show_info)
-
-
 def topmost():
     window.wm_attributes('-topmost', top.get())
 
 
-version = 3.9
-update_date = "2023/2/18"
+version = 4.0
+update_date = "2023/6/21"
 debug_mode = False
 font = ("Microsoft YaHei UI", 10, "")
 encodings = ["GBK", "UTF-8", "UTF-16", "BIG5", "shift_jis"]
 file_coding = encodings[0]
-Chinese = {"title": "Pynotepad",
-           "title2": "Pynotepad - ",
-           "ico": r'ico\Notepad.ico',
-           "file": ("文件(F)", 3),
-           "new": ("新建(N)", 3),
-           "open": ("打开(O)...", 3),
-           "save": ("保存(S)", 3),
-           "save_as": ("另存为(A)...", 4),
-           "print": ("打印(P)", 3),
-           "plugin": ("插件(L)", 3),
-           "exit": ("退出(X)", 3),
-           "undo": ("撤销(U)", 3),
-           "redo": ("重做(R)", 3),
-           "cut": ("剪切(T)", 3),
-           "copy": ("复制(C)", 3),
-           "paste": ("粘贴(P)", 3),
-           "del": ("删除(D)", 3),
-           "sel_all": ("全选(A)", 3),
-           "find": ("查找(F)...", 3),
-           "replace": ("替换(R)...", 3),
-           "edit": ("编辑(E)", 3),
-           "file_info": ("文件信息(I)", 5),
-           "file_infos": ("编码", "行数", "大小"),
-           "font": ("字体(F)...", 3),
-           "wrap": ("自动换行(W)", 5),
-           "view": ("查看(V)", 3),
-           "encoding_auto": ("自动检测(A)", 5),
-           "ignore": ("忽略错误(I)", 5),
-           "bin": ("二进制模式(B)", 6),
-           "encoding": ("编码(E)", 3),
-           "info": ("关于(I)", 3),
-           "copyright": ("版权信息(C)", 5),
-           "help": ("帮助(H)", 3),
-           "options": "选项: ",
-           "use_regexpr": "使用正则表达式",
-           "match_case": "区分大小写",
-           "use_escape_char": "使用转义字符",
-           "replace_tip": "替换为:",
-           "find_tip": "查找内容:",
-           "find_next": "查找下一个",
-           "replace1": "替换",
-           "replace_all": "全部替换",
-           "error": "错误",
-           "find1": "查找",
-           "warning": "警告",
-           "plugin_settings": "插件设置",
-           "enable": "启用",
-           "update": "更新配置文件",
-           "enable_warning": "启用恶意插件会导致您的计算机损坏, 是否继续?",
-           "disable": "禁用",
-           "plugin_version": "版本: ",
-           "restart_tip": "提示: 插件更改后重启软件才能生效!",
-           "font_settings": "字体设置",
-           "font_setting": ("字体(F)", 3),
-           "size_setting": ("大小(S)", 3),
-           "bold": ("加粗(B)", 3),
-           "italic": ("斜体(I)", 3),
-           "underline": ("下划线(U)", 4),
-           "font_effect": ("显示效果(E)", 5),
-           "print_button": "打印",
-           "sel_printer": "选择打印机",
-           "print_file": "打印文件",
-           "encoding_error": "编码错误, 可能是此编码不支持这串文本, 请到编码菜单换一种编码!",
-           "txt_name": "文本文档",
-           "all_name": "所有类型",
-           "save_as_title": "另存为",
-           "decoding_error": "解码错误, 请到编码菜单换一种编码!",
-           "open_file_title": "打开文件",
-           "ask_save": "你想将更改保存吗?",
-           "no_dependencies": "缺少依赖项: {}",
-           "topmost": ("窗口置顶(T)", 5),
-           "copyright_info": "copyright © gyc 2020-{}",
-           "corrupt_file": "损坏的文件: {}",
-           "incorrect_plugin": "不是正确的插件!",
-           "low_plugin": "此插件适用于低版本的pynotepad，当前版本过高!",
-           "plugin_install_finish": "插件安装完成!",
-           "install": "安装插件",
-           "finish": "完成",
-           "delete": "删除",
-           "delete_warning": "是否要删除这个插件?"}
-English = {"title": "Pynotepad",
-           "title2": "Pynotepad - ",
-           "ico": r'ico\Notepad.ico',
-           "file": ("File", 0),
-           "new": ("New", 0),
-           "open": ("Open", 0),
-           "save": ("Save", 0),
-           "save_as": ("Save As", 5),
-           "print": ("Print", 0),
-           "plugin": ("Plugin", 1),
-           "exit": ("Exit", 1),
-           "undo": ("Undo", 0),
-           "redo": ("Redo", 0),
-           "cut": ("Cut", 2),
-           "copy": ("Copy", 0),
-           "paste": ("Paste", 0),
-           "del": ("Delete", 0),
-           "sel_all": ("Select All", 7),
-           "find": ("Find...", 0),
-           "replace": ("Replace...", 0),
-           "edit": ("Edit", 0),
-           "file_info": ("File Info", 5),
-           "file_infos": ("Encoding", "Row for total", "Size"),
-           "font": ("Font...", 0),
-           "wrap": ("Wrap", 0),
-           "view": ("View", 0),
-           "encoding_auto": ("Auto", 0),
-           "ignore": ("Ignore Error", 0),
-           "bin": ("Bin mode", 0),
-           "encoding": ("Encoding", 0),
-           "info": ("Info", 0),
-           "copyright": ("Copyright", 0),
-           "help": ("Help", 0),
-           "options": "Options: ",
-           "use_regexpr": "Use Regular Expressions",
-           "match_case": "Match Case",
-           "use_escape_char": "Use Escape Char",
-           "replace_tip": "Replace With:",
-           "find_tip": "Find What:",
-           "find_next": "Find Next",
-           "replace1": "Replace",
-           "replace_all": "Replace All",
-           "error": "Error",
-           "find1": "Find",
-           "warning": "Warning",
-           "plugin_settings": "Plugin Settings",
-           "enable": "Enable",
-           "update": "Update Profile",
-           "enable_warning": "Enable malicious plugins will damage your computer. Do you want to continue?",
-           "disable": "Disable",
-           "plugin_version": "Version: ",
-           "restart_tip": "Prompt: Restart the software to take effect after the plugin is changed!",
-           "font_settings": "Font Settings",
-           "font_setting": ("Font", 0),
-           "size_setting": ("Size", 0),
-           "bold": ("Bold", 0),
-           "italic": ("Italic", 0),
-           "underline": ("Underline", 0),
-           "font_effect": ("Font Effect", 5),
-           "print_button": "Print",
-           "sel_printer": "Select Printer:",
-           "print_file": "Print File",
-           "encoding_error": "Encoding error. This encoding may not support this string of text. Please go to the encoding menu to change the encoding!",
-           "txt_name": "Text Document",
-           "all_name": "All Types",
-           "save_as_title": "Save As",
-           "decoding_error": "Decoding error, please go to the encoding menu to change the decoding method!",
-           "open_file_title": "Open File",
-           "ask_save": "Do you want to save your changes?",
-           "no_dependencies": "Missing dependencies: {}",
-           "topmost": ("Window Topmost", 7),
-           "copyright_info": "copyright © gyc 2020-{}",
-           "corrupt_file": "Corrupt file: {}",
-           "incorrect_plugin": "Incorrect plugin!",
-           "low_plugin": "This plugin is suitable for low version of pynotepad, the current version is too high!",
-           "plugin_install_finish": "The plugin installation is complete!",
-           "install": "Install Plugin",
-           "finish": "Finish",
-           "delete": "Delete",
-           "delete_warning": "Do you want to delete this plugin?"
-           }
-all_lang = {"zh_CN": Chinese, "en_US": English}
+all_lang = {}
+for i in os.listdir(".\\lang"):
+    if os.path.isfile(os.path.join(".\lang", i)) and i.endswith(".lang"):
+        try:
+            with open(os.path.join(".\lang", i), encoding="utf-8") as lang_file:
+                all_lang[i[:-5]] = json.load(lang_file)
+        except:
+            pass
 try:
     lang = all_lang[locale.windows_locale[win32api.GetUserDefaultLangID()]]
 except KeyError:
@@ -1028,9 +875,9 @@ for key in (lang_raw.keys() - lang.keys()):
 fontname = tk.StringVar(value=font[0])
 fontsize = tk.IntVar(value=font[1])
 
-window.title(lang["title"])
+window.title(lang["text.gui.title"])
 window.geometry('400x500')
-window.iconbitmap(lang["ico"])
+window.iconbitmap(lang["path.gui.ico"])
 if len(sys.argv) > 1:
     open_file(sys.argv[1])
 else:
@@ -1048,90 +895,118 @@ f.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES)
 e.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES)
 menubar = tk.Menu(window)
 filemenu = tk.Menu(menubar, tearoff=0)
-menubar.add_cascade(label=lang["file"][0], menu=filemenu, underline=lang["file"][1])
-filemenu.add_command(label=lang["new"][0], command=make_new, underline=lang["new"][1], accelerator="Ctrl+N")
-filemenu.add_command(label=lang["open"][0], command=open_file, underline=lang["open"][1], accelerator="Ctrl+O")
-filemenu.add_command(label=lang["save"][0], command=save, underline=lang["save"][1], accelerator="Ctrl+S")
-filemenu.add_command(label=lang["save_as"][0], command=save_as, underline=lang["save_as"][1],
+menubar.add_cascade(label=lang["text.gui.menu.file"][0], menu=filemenu, underline=lang["text.gui.menu.file"][1])
+filemenu.add_command(label=lang["text.gui.menu.file.new"][0], command=make_new,
+                     underline=lang["text.gui.menu.file.new"][1], accelerator="Ctrl+N")
+filemenu.add_command(label=lang["text.gui.menu.file.open"][0], command=open_file,
+                     underline=lang["text.gui.menu.file.open"][1], accelerator="Ctrl+O")
+filemenu.add_command(label=lang["text.gui.menu.file.save"][0], command=save,
+                     underline=lang["text.gui.menu.file.save"][1], accelerator="Ctrl+S")
+filemenu.add_command(label=lang["text.gui.menu.file.save_as"][0], command=save_as,
+                     underline=lang["text.gui.menu.file.save_as"][1],
                      accelerator="Ctrl+Shift+S")
 filemenu.add_separator()
-filemenu.add_command(label=lang["print"][0], command=send_printer, underline=lang["print"][1], accelerator="Ctrl+P")
+filemenu.add_command(label=lang["text.gui.menu.file.print"][0], command=send_printer,
+                     underline=lang["text.gui.menu.file.print"][1], accelerator="Ctrl+P")
 filemenu.add_separator()
-filemenu.add_command(label=lang["plugin"][0], command=plugin, underline=lang["plugin"][1])
+filemenu.add_command(label=lang["text.gui.menu.file.plugins"][0], command=plugin,
+                     underline=lang["text.gui.menu.file.plugins"][1])
 filemenu.add_separator()
-filemenu.add_command(label=lang["exit"][0], command=exit_window, underline=lang["exit"][1])
+filemenu.add_command(label=lang["text.gui.menu.file.exit"][0], command=exit_window,
+                     underline=lang["text.gui.menu.file.exit"][1])
 editmenu = tk.Menu(menubar, tearoff=0)
-editmenu.add_command(label=lang["undo"][0], command=lambda: e.edit_undo(), underline=lang["undo"][1],
+editmenu.add_command(label=lang["text.gui.menu.edit.undo"][0], command=lambda: e.edit_undo(),
+                     underline=lang["text.gui.menu.edit.undo"][1],
                      accelerator="Ctrl+Z")
-editmenu.add_command(label=lang["redo"][0], command=lambda: e.edit_redo(), underline=lang["redo"][1],
+editmenu.add_command(label=lang["text.gui.menu.edit.redo"][0], command=lambda: e.edit_redo(),
+                     underline=lang["text.gui.menu.edit.redo"][1],
                      accelerator="Ctrl+Shift+Z")
 editmenu.add_separator()
-editmenu.add_command(label=lang["cut"][0], command=lambda: e.event_generate("<<Cut>>"), underline=lang["cut"][1],
+editmenu.add_command(label=lang["text.gui.menu.edit.cut"][0], command=lambda: e.event_generate("<<Cut>>"),
+                     underline=lang["text.gui.menu.edit.cut"][1],
                      accelerator="Ctrl+X")
-editmenu.add_command(label=lang["copy"][0], command=lambda: e.event_generate("<<Copy>>"), underline=lang["copy"][1],
+editmenu.add_command(label=lang["text.gui.menu.edit.copy"][0], command=lambda: e.event_generate("<<Copy>>"),
+                     underline=lang["text.gui.menu.edit.copy"][1],
                      accelerator="Ctrl+C")
-editmenu.add_command(label=lang["paste"][0], command=lambda: e.event_generate("<<Paste>>"), underline=lang["paste"][1],
+editmenu.add_command(label=lang["text.gui.menu.edit.paste"][0], command=lambda: e.event_generate("<<Paste>>"),
+                     underline=lang["text.gui.menu.edit.paste"][1],
                      accelerator="Ctrl+V")
-editmenu.add_command(label=lang["del"][0], command=lambda: e.delete(tk.SEL_FIRST, tk.SEL_LAST),
-                     underline=lang["del"][1], accelerator="Del")
-editmenu.add_command(label=lang["sel_all"][0], command=lambda: e.tag_add("sel", "0.0", "end"),
-                     underline=lang["sel_all"][1], accelerator="Ctrl+A")
+editmenu.add_command(label=lang["text.gui.menu.edit.delete"][0], command=lambda: e.delete(tk.SEL_FIRST, tk.SEL_LAST),
+                     underline=lang["text.gui.menu.edit.delete"][1], accelerator="Del")
+editmenu.add_command(label=lang["text.gui.menu.edit.select_all"][0], command=lambda: e.tag_add("sel", "0.0", "end"),
+                     underline=lang["text.gui.menu.edit.select_all"][1], accelerator="Ctrl+A")
 editmenu.add_separator()
-editmenu.add_command(label=lang["find"][0], command=lambda: find_str(), underline=lang["find"][1], accelerator="Ctrl+F")
-editmenu.add_command(label=lang["replace"][0], command=lambda: replace_str(), underline=lang["replace"][1],
+editmenu.add_command(label=lang["text.gui.menu.edit.find"][0], command=lambda: find_str(),
+                     underline=lang["text.gui.menu.edit.find"][1], accelerator="Ctrl+F")
+editmenu.add_command(label=lang["text.gui.menu.edit.replace"][0], command=lambda: replace_str(),
+                     underline=lang["text.gui.menu.edit.replace"][1],
                      accelerator="Ctrl+H")
-menubar.add_cascade(label=lang["edit"][0], menu=editmenu, underline=lang["edit"][1])
+menubar.add_cascade(label=lang["text.gui.menu.edit"][0], menu=editmenu, underline=lang["text.gui.menu.edit"][1])
 contextmenu = tk.Menu(window, tearoff=0)
-contextmenu.add_command(label=lang["undo"][0], command=lambda: e.edit_undo(), underline=lang["undo"][1],
+contextmenu.add_command(label=lang["text.gui.menu.edit.undo"][0], command=lambda: e.edit_undo(),
+                        underline=lang["text.gui.menu.edit.undo"][1],
                         accelerator="Ctrl+Z")
-contextmenu.add_command(label=lang["redo"][0], command=lambda: e.edit_redo(), underline=lang["redo"][1],
+contextmenu.add_command(label=lang["text.gui.menu.edit.redo"][0], command=lambda: e.edit_redo(),
+                        underline=lang["text.gui.menu.edit.redo"][1],
                         accelerator="Ctrl+Shift+Z")
 contextmenu.add_separator()
-contextmenu.add_command(label=lang["cut"][0], command=lambda: e.event_generate("<<Cut>>"), underline=lang["cut"][1],
+contextmenu.add_command(label=lang["text.gui.menu.edit.cut"][0], command=lambda: e.event_generate("<<Cut>>"),
+                        underline=lang["text.gui.menu.edit.cut"][1],
                         accelerator="Ctrl+X")
-contextmenu.add_command(label=lang["copy"][0], command=lambda: e.event_generate("<<Copy>>"), underline=lang["copy"][1],
+contextmenu.add_command(label=lang["text.gui.menu.edit.copy"][0], command=lambda: e.event_generate("<<Copy>>"),
+                        underline=lang["text.gui.menu.edit.copy"][1],
                         accelerator="Ctrl+C")
-contextmenu.add_command(label=lang["paste"][0], command=lambda: e.event_generate("<<Paste>>"),
-                        underline=lang["paste"][1], accelerator="Ctrl+V")
-contextmenu.add_command(label=lang["del"][0], command=lambda: e.delete(tk.SEL_FIRST, tk.SEL_LAST),
-                        underline=lang["del"][1], accelerator="Del")
-contextmenu.add_command(label=lang["sel_all"][0], command=lambda: e.tag_add("sel", "0.0", "end"),
-                        underline=lang["sel_all"][1], accelerator="Ctrl+A")
+contextmenu.add_command(label=lang["text.gui.menu.edit.paste"][0], command=lambda: e.event_generate("<<Paste>>"),
+                        underline=lang["text.gui.menu.edit.paste"][1], accelerator="Ctrl+V")
+contextmenu.add_command(label=lang["text.gui.menu.edit.delete"][0], command=lambda: e.delete(tk.SEL_FIRST, tk.SEL_LAST),
+                        underline=lang["text.gui.menu.edit.delete"][1], accelerator="Del")
+contextmenu.add_command(label=lang["text.gui.menu.edit.select_all"][0], command=lambda: e.tag_add("sel", "0.0", "end"),
+                        underline=lang["text.gui.menu.edit.select_all"][1], accelerator="Ctrl+A")
 contextmenu.add_separator()
-contextmenu.add_command(label=lang["file_info"][0], underline=lang["file_info"][1],
+contextmenu.add_command(label=lang["text.gui.menu.view.file_info"][0],
+                        underline=lang["text.gui.menu.view.file_info"][1],
                         command=lambda: tk.messagebox.showinfo(file_url, "{}:{}\n{}:{}\n{}:{}".format(
-                            lang["file_infos"][0], file_coding, lang["file_infos"][1], len(e.get("0.0", "end")[:-1]),
-                            lang["file_infos"][2], get_size())))
+                            lang["text.gui.menu.view.file_info.infos"][0], file_coding,
+                            lang["text.gui.menu.view.file_info.infos"][1], len(e.get("0.0", "end")[:-1]),
+                            lang["text.gui.menu.view.file_info.infos"][2], get_size())))
 viewmenu = tk.Menu(menubar, tearoff=0)
-viewmenu.add_command(label=lang["font"][0], command=font_settings, underline=lang["font"][1])
+viewmenu.add_command(label=lang["text.gui.menu.view.font"][0], command=font_settings,
+                     underline=lang["text.gui.menu.view.font"][1])
 viewmenu.add_separator()
-viewmenu.add_checkbutton(label=lang["wrap"][0], underline=lang["wrap"][1], variable=wrap, command=wrap_)
-viewmenu.add_command(label=lang["file_info"][0], underline=lang["file_info"][1],
+viewmenu.add_checkbutton(label=lang["text.gui.menu.view.warp"][0], underline=lang["text.gui.menu.view.warp"][1],
+                         variable=wrap, command=wrap_)
+viewmenu.add_command(label=lang["text.gui.menu.view.file_info"][0], underline=lang["text.gui.menu.view.file_info"][1],
                      command=lambda: tk.messagebox.showinfo(file_url, "{}:{}\n{}:{}\n{}:{}".format(
-                         lang["file_infos"][0], file_coding, lang["file_infos"][1], len(e.get("0.0", "end")[:-1]),
-                         lang["file_infos"][2], get_size())))
+                         lang["text.gui.menu.view.file_info.infos"][0], file_coding,
+                         lang["text.gui.menu.view.file_info.infos"][1], len(e.get("0.0", "end")[:-1]),
+                         lang["text.gui.menu.view.file_info.infos"][2], get_size())))
 viewmenu.add_separator()
-viewmenu.add_checkbutton(label=lang["topmost"][0], underline=lang["topmost"][1], command=topmost, variable=top)
-menubar.add_cascade(label=lang["view"][0], menu=viewmenu, underline=lang["view"][1])
+viewmenu.add_checkbutton(label=lang["text.gui.menu.view.topmost"][0], underline=lang["text.gui.menu.view.topmost"][1], command=topmost, variable=top)
+menubar.add_cascade(label=lang["text.gui.menu.view"][0], menu=viewmenu, underline=lang["text.gui.menu.view"][1])
 encodingmenu = tk.Menu(menubar, tearoff=0)
-encodingmenu.add_radiobutton(label=lang["encoding_auto"][0], underline=lang["encoding_auto"][1], variable=encoding,
+encodingmenu.add_radiobutton(label=lang["text.gui.menu.encoding.auto_encoding"][0],
+                             underline=lang["text.gui.menu.encoding.auto_encoding"][1], variable=encoding,
                              value="auto")
 for i in encodings:
     encodingmenu.add_radiobutton(label=i, variable=encoding, value=i)
 encodingmenu.add_separator()
-encodingmenu.add_checkbutton(label=lang["ignore"][0], variable=ignore, underline=lang["ignore"][1])
-encodingmenu.add_checkbutton(label=lang["bin"][0], variable=b, underline=lang["bin"][1], command=bin_mode)
-menubar.add_cascade(label=lang["encoding"][0], menu=encodingmenu, underline=lang["encoding"][1])
+encodingmenu.add_checkbutton(label=lang["text.gui.menu.encoding.ignore_errors"][0], variable=ignore,
+                             underline=lang["text.gui.menu.encoding.ignore_errors"][1])
+encodingmenu.add_checkbutton(label=lang["text.gui.menu.encoding.binary_mode"][0], variable=b,
+                             underline=lang["text.gui.menu.encoding.binary_mode"][1], command=bin_mode)
+menubar.add_cascade(label=lang["text.gui.menu.encoding"][0], menu=encodingmenu,
+                    underline=lang["text.gui.menu.encoding"][1])
 infomenu = tk.Menu(menubar, tearoff=0)
-infomenu.add_command(label=lang["info"][0],
-                     command=lambda: tk.messagebox.showinfo(lang["title"], "v{} {}".format(version, update_date)),
-                     underline=lang["info"][1])
-infomenu.add_command(label=lang["copyright"][0],
-                     command=lambda: tk.messagebox.showinfo(lang["title"],
-                                                            lang["copyright_info"].format(
+infomenu.add_command(label=lang["text.gui.menu.help.about"][0],
+                     command=lambda: tk.messagebox.showinfo(lang["text.gui.title"],
+                                                            "v{} {}".format(version, update_date)),
+                     underline=lang["text.gui.menu.help.about"][1])
+infomenu.add_command(label=lang["text.gui.menu.help.copyright"][0],
+                     command=lambda: tk.messagebox.showinfo(lang["text.gui.title"],
+                                                            lang["text.gui.copyright"].format(
                                                                 time.localtime(time.time())[0])),
-                     underline=lang["copyright"][1])
-menubar.add_cascade(label=lang["help"][0], menu=infomenu, underline=lang["help"][1])
+                     underline=lang["text.gui.menu.help.copyright"][1])
+menubar.add_cascade(label=lang["text.gui.menu.help"][0], menu=infomenu, underline=lang["text.gui.menu.help"][1])
 
 window.bind("<Control-N>", lambda event: make_new())
 window.bind("<Control-n>", lambda event: make_new())
