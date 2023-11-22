@@ -12,6 +12,7 @@ import tempfile
 import sys
 import re
 import os
+import win32ui
 import windnd
 import base64
 from Cryptodome.PublicKey import RSA
@@ -20,8 +21,6 @@ from Cryptodome.Signature import PKCS1_v1_5 as PKCS1_signature
 import ctypes
 import locale
 import zipfile
-import traceback
-import io
 
 ctypes.windll.shcore.SetProcessDpiAwareness(1)
 ScaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0)
@@ -102,7 +101,8 @@ def drop(func):
 def open_file(url=""):
     if not url:
         url = tk.filedialog.askopenfilename(title=lang["text.gui.file.open.title"],
-                                            filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"), (lang["text.gui.file.open.type.all"], ".*")])
+                                            filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"),
+                                                       (lang["text.gui.file.open.type.all"], ".*")])
     e.delete('0.0', 'end')
     global file_url
     global file_coding
@@ -161,21 +161,24 @@ def save():
                         f.write(e.get("0.0", "end")[:-1])
                         issave = True
                     except UnicodeEncodeError:
-                        tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.encoding.tips.error"])
+                        tk.messagebox.showerror(lang["text.gui.msg.title.error"],
+                                                lang["text.gui.file.encoding.tips.error"])
             else:
                 with open(file_url, "w", encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
                     try:
                         f.write(e.get("0.0", "end")[:-1])
                         issave = True
                     except UnicodeEncodeError:
-                        tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.encoding.tips.error"])
+                        tk.messagebox.showerror(lang["text.gui.msg.title.error"],
+                                                lang["text.gui.file.encoding.tips.error"])
         return issave
 
 
 def save_as():
     issave = False
     url = tk.filedialog.asksaveasfilename(title=lang["text.gui.file.save_as.title"],
-                                          filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"), (lang["text.gui.file.open.type.all"], ".*")])
+                                          filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"),
+                                                     (lang["text.gui.file.open.type.all"], ".*")])
     if b.get():
         with open(url, "wb") as f:
             try:
@@ -248,19 +251,40 @@ def send_printer():
     pt.transient(window)
 
     def p():
-        filename = tempfile.mktemp(".txt")
-        with open(filename, "w", errors="ignore" if ignore.get() else None) as f:
-            f.write(e.get("0.0", "end")[:-1])
+        def send_to_printer(text, font):
+            dc = win32ui.CreateDC()
+            dc.CreatePrinterDC(prcombo.get())
 
-        win32api.ShellExecute(
-            0,
-            "printto",
-            filename,
-            '"%s"' % printer.get(),
-            ".",
-            0
-        )
-        pt.destroy()
+            def convert_font_format(font):
+                name, height, attributes = font
+                weight = 400
+                italic = False
+                underline = False
+                attributes = attributes.split(" ")
+                if "bold" in attributes:
+                    weight = 700
+                if "italic" in attributes:
+                    italic = True
+                if "underline" in attributes:
+                    underline = True
+                converted_font = {
+                    'name': name,
+                    'height': height*10,
+                    'weight': weight,
+                    'italic': italic,
+                    'underline': underline
+                }
+                return converted_font
+
+            font_obj = win32ui.CreateFont(convert_font_format(font))
+            dc.SelectObject(font_obj)
+            dc.StartDoc(text)
+            dc.StartPage()
+            dc.TextOut(0, 0, text)
+            dc.EndPage()
+            dc.EndDoc()
+
+        send_to_printer(e.get("0.0", "end")[:-1], font)
 
     tk.ttk.Button(pt, text=lang["text.gui.menu.print.print"], command=p).pack()
 
@@ -282,20 +306,26 @@ def font_settings():
                                          columnbreak=True)
         else:
             fontnamemenu.add_radiobutton(label=i, variable=fontname, value=i, command=font_, font=(i, 10))
-    menubar.add_cascade(label=lang["text.gui.menu.font.menu.font"][0], menu=fontnamemenu, underline=lang["text.gui.menu.font.menu.font"][1])
+    menubar.add_cascade(label=lang["text.gui.menu.font.menu.font"][0], menu=fontnamemenu,
+                        underline=lang["text.gui.menu.font.menu.font"][1])
     fontsizemenu = tk.Menu(menubar, tearoff=0)
     for i in range(10, 51):
         if i - 10 != 0 and (i - 10) % 10 == 0:
             fontsizemenu.add_radiobutton(label=str(i), variable=fontsize, value=i, command=font_, columnbreak=True)
         else:
             fontsizemenu.add_radiobutton(label=str(i), variable=fontsize, value=i, command=font_)
-    menubar.add_cascade(label=lang["text.gui.menu.font.menu.font_size"][0], menu=fontsizemenu, underline=lang["text.gui.menu.font.menu.font_size"][1])
+    menubar.add_cascade(label=lang["text.gui.menu.font.menu.font_size"][0], menu=fontsizemenu,
+                        underline=lang["text.gui.menu.font.menu.font_size"][1])
     fonteffectmenu = tk.Menu(menubar, tearoff=0)
-    fonteffectmenu.add_checkbutton(label=lang["text.gui.menu.font.menu.font_effect.bold"][0], variable=B, underline=lang["text.gui.menu.font.menu.font_effect.bold"][1], command=font_)
-    fonteffectmenu.add_checkbutton(label=lang["text.gui.menu.font.menu.font_effect.italic"][0], variable=I, underline=lang["text.gui.menu.font.menu.font_effect.italic"][1], command=font_)
-    fonteffectmenu.add_checkbutton(label=lang["text.gui.menu.font.menu.font_effect.underline"][0], variable=U, underline=lang["text.gui.menu.font.menu.font_effect.underline"][1],
+    fonteffectmenu.add_checkbutton(label=lang["text.gui.menu.font.menu.font_effect.bold"][0], variable=B,
+                                   underline=lang["text.gui.menu.font.menu.font_effect.bold"][1], command=font_)
+    fonteffectmenu.add_checkbutton(label=lang["text.gui.menu.font.menu.font_effect.italic"][0], variable=I,
+                                   underline=lang["text.gui.menu.font.menu.font_effect.italic"][1], command=font_)
+    fonteffectmenu.add_checkbutton(label=lang["text.gui.menu.font.menu.font_effect.underline"][0], variable=U,
+                                   underline=lang["text.gui.menu.font.menu.font_effect.underline"][1],
                                    command=font_)
-    menubar.add_cascade(label=lang["text.gui.menu.font.menu.font_effect"][0], menu=fonteffectmenu, underline=lang["text.gui.menu.font.menu.font_effect"][1])
+    menubar.add_cascade(label=lang["text.gui.menu.font.menu.font_effect"][0], menu=fonteffectmenu,
+                        underline=lang["text.gui.menu.font.menu.font_effect"][1])
     setings.config(menu=menubar)
 
 
@@ -584,7 +614,8 @@ def install_plugin(file):
     with zipfile.ZipFile(file) as f:
         corrupt_file = f.testzip()
         if not (corrupt_file is None):
-            tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.menu.plugin.file.invalid"].format(corrupt_file))
+            tk.messagebox.showerror(lang["text.gui.msg.title.error"],
+                                    lang["text.gui.menu.plugin.file.invalid"].format(corrupt_file))
             return
         plugin_dirname = f.filelist[0].filename.split("/")[0]
 
@@ -614,11 +645,13 @@ def install_plugin(file):
                 keys = ["name", "version", "description", "minsdk", "files", "dependencies"]
                 for i in keys:
                     if not (i in info):
-                        tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.menu.plugin.plugin.invalid"])
+                        tk.messagebox.showerror(lang["text.gui.msg.title.error"],
+                                                lang["text.gui.menu.plugin.plugin.invalid"])
                         return
                 if "maxsdk" in info:
                     if version > info["maxsdk"]:
-                        tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.menu.plugin.plugin.old"])
+                        tk.messagebox.showerror(lang["text.gui.msg.title.error"],
+                                                lang["text.gui.menu.plugin.plugin.old"])
                         return
                 try:
                     for j in info["files"]:
@@ -641,7 +674,8 @@ def install_plugin(file):
         except Exception as e:
             tk.messagebox.showerror(lang["text.gui.msg.title.error"], e)
         else:
-            tk.messagebox.showinfo(lang["text.gui.menu.plugin.install.finish.title"], lang["text.gui.menu.plugin.install.finish"])
+            tk.messagebox.showinfo(lang["text.gui.menu.plugin.install.finish.title"],
+                                   lang["text.gui.menu.plugin.install.finish"])
 
         rmdir(tempdir)
 
@@ -699,7 +733,8 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
                             no_dependencies.append(i)
                     if no_dependencies:
                         tk.messagebox.showerror(lang["text.gui.msg.title.error"],
-                                                lang["text.gui.menu.plugins.tips.no_dependencies"].format(",".join(no_dependencies)))
+                                                lang["text.gui.menu.plugins.tips.no_dependencies"].format(
+                                                    ",".join(no_dependencies)))
                     else:
                         try:
                             for j in info["files"]:
@@ -817,12 +852,13 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
     pluginchoose.bind("<<ListboxSelect>>", show_info)
     windnd.hook_dropfiles(pluginchoose, func=drop(install))
 
+
 def topmost():
     window.wm_attributes('-topmost', top.get())
 
 
-version = 4.0
-update_date = "2023/6/21"
+version = 4.1
+update_date = "2023/10/01"
 debug_mode = False
 font = ("Microsoft YaHei UI", 10, "")
 encodings = ["GBK", "UTF-8", "UTF-16", "BIG5", "shift_jis"]
@@ -981,7 +1017,8 @@ viewmenu.add_command(label=lang["text.gui.menu.view.file_info"][0], underline=la
                          lang["text.gui.menu.view.file_info.infos"][1], len(e.get("0.0", "end")[:-1]),
                          lang["text.gui.menu.view.file_info.infos"][2], get_size())))
 viewmenu.add_separator()
-viewmenu.add_checkbutton(label=lang["text.gui.menu.view.topmost"][0], underline=lang["text.gui.menu.view.topmost"][1], command=topmost, variable=top)
+viewmenu.add_checkbutton(label=lang["text.gui.menu.view.topmost"][0], underline=lang["text.gui.menu.view.topmost"][1],
+                         command=topmost, variable=top)
 menubar.add_cascade(label=lang["text.gui.menu.view"][0], menu=viewmenu, underline=lang["text.gui.menu.view"][1])
 encodingmenu = tk.Menu(menubar, tearoff=0)
 encodingmenu.add_radiobutton(label=lang["text.gui.menu.encoding.auto_encoding"][0],
