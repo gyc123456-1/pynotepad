@@ -772,7 +772,7 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
 
     def install(file=""):
         if file == "":
-            file = tk.filedialog.askopenfilename(title="选择插件", filetypes=[('插件文件', '.zip')], parent=pluginwindow)
+            file = tk.filedialog.askopenfilename(title=lang["text.gui.file.plugin.title"], filetypes=[(lang["text.gui.file.plugin.type"], '.zip')], parent=pluginwindow)
         install_plugin(file)
         pluginwindow.destroy()
         plugin()
