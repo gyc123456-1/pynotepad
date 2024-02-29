@@ -1,6 +1,6 @@
-# pynotepad
+# Pynotepad
 
-Pynotepad is a text editor coding in python language.It supports more encoding, Plugin function is also supported.
+Pynotepad是一个用python编写的文本编辑器，支持更多格式及插件
 
 ![GitHub last commit (by committer)](https://img.shields.io/github/last-commit/gyc123456-1/pynotepad)![GitHub Release Date - Published_At](https://img.shields.io/github/release-date/gyc123456-1/pynotepad)![GitHub release (with filter)](https://img.shields.io/github/v/release/gyc123456-1/pynotepad)![GitHub all releases](https://img.shields.io/github/downloads/gyc123456-1/pynotepad/total)![GitHub repo size](https://img.shields.io/github/repo-size/gyc123456-1/pynotepad.svg)![GitHub](https://img.shields.io/github/license/gyc123456-1/pynotepad.svg)
 
@@ -8,21 +8,18 @@ Pynotepad is a text editor coding in python language.It supports more encoding, 
 
 
 
-# Usage method
-1. Find and click "Release" on the right.
-2. Select the corresponding version of your operating system.
-3. Download and Open.
-4. Follow the prompts to install.
-5. Done!
-6. See [wiki](https://github.com/gyc123456-1/pynotepad/wiki) for more
+# 下载
+1. 点击右边的 Release
+2. 下载你需要的版本
+3. 解压
+4. 打开文件夹中的 pynotepad.exe
+5. 更多帮助请查看 [wiki](https://github.com/gyc123456-1/pynotepad/wiki)
 
-# If you want to run the source code
-1. Download or Git this depository.
-2. Open the "Command prompt".
-3. Type "cd [your folder]".
-4. Type "python -m pip install -r requirements.txt".
-5. Type "python main.py".
-6. Done!
+# 运行源代码
+1. 克隆这个仓库
+2. 打开命令提示符
+3. 输入 python -m pip install -r requirements.txt 以安装依赖
+4. 运行 main.py 即可
 
-# About translation
-Almost all words are translated by translation software, Sorry.
+# Bug与建议
+请前往 [Issues](https://github.com/gyc123456-1/pynotepad/issues)页面提交issue
