@@ -22,4 +22,4 @@ Pynotepad是一个用python编写的文本编辑器，支持更多格式及插�
 4. 运行 main.py 即可
 
 # Bug与建议
-请前往 [Issues](https://github.com/gyc123456-1/pynotepad/issues)页面提交issue
+请前往 [Issues](https://github.com/gyc123456-1/pynotepad/issues) 页面提交issue
