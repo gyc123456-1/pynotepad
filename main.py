@@ -1,5 +1,5 @@
-import threading
 import json
+import threading
 import time
 import tkinter as tk
 import tkinter.messagebox
@@ -28,6 +28,27 @@ ScaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0)
 
 def q(func):
     def wrapper(*args, **kwargs):
+        del_list = []
+        for i in os.listdir("plugin"):
+            if i in plugins and os.path.isdir(os.path.join("plugin", i)):
+                with open(os.path.join("plugin", i, "package.json"), encoding="utf-8") as f:
+                    info = json.load(f)
+                    try:
+                        for j in info["files"]:
+                            if j["position"] == "ask_save":
+                                try:
+                                    with open(os.path.join("plugin", i, j["file"]), encoding="utf-8") as f:
+                                        if j["wait"]:
+                                            exec(f.read(), globals(), locals())
+                                        else:
+                                            threading.Thread(name=info["name"], target=exec,
+                                                             args=(f.read(), globals(), locals())).start()
+                                except FileNotFoundError:
+                                    del_list.append(i)
+                    except Exception as err:
+                        tk.messagebox.showerror(info["name"], str(err))
+        for i in del_list:
+            plugins.remove(i)
         if file_url != "":
             if encoding.get() == "auto":
                 for i in reversed(encodings):
@@ -99,6 +120,27 @@ def drop(func):
 
 @q
 def open_file(url=""):
+    del_list = []
+    for i in os.listdir("plugin"):
+        if i in plugins and os.path.isdir(os.path.join("plugin", i)):
+            with open(os.path.join("plugin", i, "package.json"), encoding="utf-8") as f:
+                info = json.load(f)
+                try:
+                    for j in info["files"]:
+                        if j["position"] == "open":
+                            try:
+                                with open(os.path.join("plugin", i, j["file"]), encoding="utf-8") as f:
+                                    if j["wait"]:
+                                        exec(f.read(), globals(), locals())
+                                    else:
+                                        threading.Thread(name=info["name"], target=exec,
+                                                         args=(f.read(), globals(), locals())).start()
+                            except FileNotFoundError:
+                                del_list.append(i)
+                except Exception as err:
+                    tk.messagebox.showerror(info["name"], str(err))
+    for i in del_list:
+        plugins.remove(i)
     if not url:
         url = tk.filedialog.askopenfilename(title=lang["text.gui.file.open.title"],
                                             filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"),
@@ -143,6 +185,27 @@ def open_file(url=""):
 def save():
     global window
     global file_url
+    del_list = []
+    for i in os.listdir("plugin"):
+        if i in plugins and os.path.isdir(os.path.join("plugin", i)):
+            with open(os.path.join("plugin", i, "package.json"), encoding="utf-8") as f:
+                info = json.load(f)
+                try:
+                    for j in info["files"]:
+                        if j["position"] == "save":
+                            try:
+                                with open(os.path.join("plugin", i, j["file"]), encoding="utf-8") as f:
+                                    if j["wait"]:
+                                        exec(f.read(), globals(), locals())
+                                    else:
+                                        threading.Thread(name=info["name"], target=exec,
+                                                         args=(f.read(), globals(), locals())).start()
+                            except FileNotFoundError:
+                                del_list.append(i)
+                except Exception as err:
+                    tk.messagebox.showerror(info["name"], str(err))
+    for i in del_list:
+        plugins.remove(i)
     issave = False
     if file_url == "":
         return save_as()
@@ -175,6 +238,27 @@ def save():
 
 
 def save_as():
+    del_list = []
+    for i in os.listdir("plugin"):
+        if i in plugins and os.path.isdir(os.path.join("plugin", i)):
+            with open(os.path.join("plugin", i, "package.json"), encoding="utf-8") as f:
+                info = json.load(f)
+                try:
+                    for j in info["files"]:
+                        if j["position"] == "save_as":
+                            try:
+                                with open(os.path.join("plugin", i, j["file"]), encoding="utf-8") as f:
+                                    if j["wait"]:
+                                        exec(f.read(), globals(), locals())
+                                    else:
+                                        threading.Thread(name=info["name"], target=exec,
+                                                         args=(f.read(), globals(), locals())).start()
+                            except FileNotFoundError:
+                                del_list.append(i)
+                except Exception as err:
+                    tk.messagebox.showerror(info["name"], str(err))
+    for i in del_list:
+        plugins.remove(i)
     issave = False
     url = tk.filedialog.asksaveasfilename(title=lang["text.gui.file.save_as.title"],
                                           filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"),
@@ -210,6 +294,27 @@ def save_as():
 
 @q
 def exit_window():
+    del_list = []
+    for i in os.listdir("plugin"):
+        if i in plugins and os.path.isdir(os.path.join("plugin", i)):
+            with open(os.path.join("plugin", i, "package.json"), encoding="utf-8") as f:
+                info = json.load(f)
+                try:
+                    for j in info["files"]:
+                        if j["position"] == "exit":
+                            try:
+                                with open(os.path.join("plugin", i, j["file"]), encoding="utf-8") as f:
+                                    if j["wait"]:
+                                        exec(f.read(), globals(), locals())
+                                    else:
+                                        threading.Thread(name=info["name"], target=exec,
+                                                         args=(f.read(), globals(), locals())).start()
+                            except FileNotFoundError:
+                                del_list.append(i)
+                except Exception as err:
+                    tk.messagebox.showerror(info["name"], str(err))
+    for i in del_list:
+        plugins.remove(i)
     write_config()
     window.quit()
 
@@ -235,6 +340,27 @@ def wrap_():
 
 
 def send_printer():
+    del_list = []
+    for i in os.listdir("plugin"):
+        if i in plugins and os.path.isdir(os.path.join("plugin", i)):
+            with open(os.path.join("plugin", i, "package.json"), encoding="utf-8") as f:
+                info = json.load(f)
+                try:
+                    for j in info["files"]:
+                        if j["position"] == "print":
+                            try:
+                                with open(os.path.join("plugin", i, j["file"]), encoding="utf-8") as f:
+                                    if j["wait"]:
+                                        exec(f.read(), globals(), locals())
+                                    else:
+                                        threading.Thread(name=info["name"], target=exec,
+                                                         args=(f.read(), globals(), locals())).start()
+                            except FileNotFoundError:
+                                del_list.append(i)
+                except Exception as err:
+                    tk.messagebox.showerror(info["name"], str(err))
+    for i in del_list:
+        plugins.remove(i)
     pt = tk.Toplevel()
     pt.geometry("250x80")
     pt.title(lang["text.gui.menu.print.title"])
@@ -251,6 +377,27 @@ def send_printer():
     pt.transient(window)
 
     def p():
+        del_list = []
+        for i in os.listdir("plugin"):
+            if i in plugins and os.path.isdir(os.path.join("plugin", i)):
+                with open(os.path.join("plugin", i, "package.json"), encoding="utf-8") as f:
+                    info = json.load(f)
+                    try:
+                        for j in info["files"]:
+                            if j["position"] == "print_handler":
+                                try:
+                                    with open(os.path.join("plugin", i, j["file"]), encoding="utf-8") as f:
+                                        if j["wait"]:
+                                            exec(f.read(), globals(), locals())
+                                        else:
+                                            threading.Thread(name=info["name"], target=exec,
+                                                             args=(f.read(), globals(), locals())).start()
+                                except FileNotFoundError:
+                                    del_list.append(i)
+                    except Exception as err:
+                        tk.messagebox.showerror(info["name"], str(err))
+        for i in del_list:
+            plugins.remove(i)
         def send_to_printer(text, font):
             dc = win32ui.CreateDC()
             dc.CreatePrinterDC(prcombo.get())
@@ -290,6 +437,27 @@ def send_printer():
 
 
 def font_settings():
+    del_list = []
+    for i in os.listdir("plugin"):
+        if i in plugins and os.path.isdir(os.path.join("plugin", i)):
+            with open(os.path.join("plugin", i, "package.json"), encoding="utf-8") as f:
+                info = json.load(f)
+                try:
+                    for j in info["files"]:
+                        if j["position"] == "font":
+                            try:
+                                with open(os.path.join("plugin", i, j["file"]), encoding="utf-8") as f:
+                                    if j["wait"]:
+                                        exec(f.read(), globals(), locals())
+                                    else:
+                                        threading.Thread(name=info["name"], target=exec,
+                                                         args=(f.read(), globals(), locals())).start()
+                            except FileNotFoundError:
+                                del_list.append(i)
+                except Exception as err:
+                    tk.messagebox.showerror(info["name"], str(err))
+    for i in del_list:
+        plugins.remove(i)
     setings = tk.Toplevel()
     setings.geometry("220x20")
     setings.title(lang["text.gui.menu.font.title"])
@@ -581,7 +749,7 @@ def bin_mode():
         open_file(file_url)
 
 
-def write_config(path=os.path.join(os.environ["appdata"], "pynotepad")):
+def write_config(path=os.path.dirname(sys.argv[0])):
     with open(os.path.join(path, "config.ini"), "w") as f:
         json.dump({"font": font,
                    "wrap": wrap.get(),
@@ -592,10 +760,10 @@ def write_config(path=os.path.join(os.environ["appdata"], "pynotepad")):
                    "plugins": plugins}, f)
 
 
-def read_config(path=os.path.join(os.environ["appdata"], "pynotepad")):
+def read_config(path=os.path.dirname(sys.argv[0])):
     global font
     global plugins
-    if os.path.isdir(path):
+    if os.path.isfile(os.path.join(path, "config.ini")):
         with open(os.path.join(path, "config.ini")) as f:
             config = json.load(f)
         font = config["font"]
@@ -605,10 +773,24 @@ def read_config(path=os.path.join(os.environ["appdata"], "pynotepad")):
         U.set(config["underline"])
         ignore.set(config["ignore"])
         plugins = config["plugins"]
+        if type(plugins) != list:
+            plugins = []
     else:
-        os.mkdir(path)
+        if not os.path.isdir(path):
+            os.mkdir(path)
         write_config()
 
+def rmdir(dir_path):
+    if os.path.isfile(dir_path):
+        try:
+            os.remove(dir_path)
+        except Exception as e:
+            print(e)
+    elif os.path.isdir(dir_path):
+        file_list = os.listdir(dir_path)
+        for file_name in file_list:
+            rmdir(os.path.join(dir_path, file_name))
+        os.rmdir(dir_path)
 
 def install_plugin(file):
     with zipfile.ZipFile(file) as f:
@@ -618,18 +800,6 @@ def install_plugin(file):
                                     lang["text.gui.menu.plugin.file.invalid"].format(corrupt_file))
             return
         plugin_dirname = f.filelist[0].filename.split("/")[0]
-
-        def rmdir(dir_path):
-            if os.path.isfile(dir_path):
-                try:
-                    os.remove(dir_path)
-                except Exception as e:
-                    print(e)
-            elif os.path.isdir(dir_path):
-                file_list = os.listdir(dir_path)
-                for file_name in file_list:
-                    rmdir(os.path.join(dir_path, file_name))
-                os.rmdir(dir_path)
 
         tempdir = os.path.join(tempfile.gettempdir(), "pynotepad", plugin_dirname)
         try:
@@ -712,59 +882,70 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
                     rdata = f.read()
                 a = rsa_public_check_sign(rdata, i["sign"], pubkey)
             return a
-        except:
+        except Exception:
             return False
 
     def enable():
         info = pluginlist[pluginname.cget("text")]
-        if enable_button.cget("text") == lang["text.gui.menu.plugin.enable"] or enable_button.cget("text") == lang[
-            "text.gui.menu.plugin.profile.update"]:
-            if is_signature(info):
-                plugins[info["path"]] = info
-            else:
-                if tk.messagebox.askquestion(lang["text.gui.msg.title.warning"],
+        if enable_button.cget("text") == lang["text.gui.menu.plugin.enable"]:
+            if not is_signature(info):
+                if not tk.messagebox.askquestion(lang["text.gui.msg.title.warning"],
                                              lang["text.gui.msg.plugin.enable_warning"]) == "yes":
-                    no_dependencies = []
-                    for i in info["dependencies"]:
-                        for j in plugins.values():
-                            if i == j["name"]:
+                    return
+            no_dependencies = []
+            for d in info["dependencies"]:
+                for i in os.listdir("plugin"):
+                    if i in plugins and os.path.isdir(os.path.join("plugin", i)):
+                        with open(os.path.join("plugin", i, "package.json"), encoding="utf-8") as f:
+                            if d == json.load(f)["name"]:
                                 break
-                        else:
-                            no_dependencies.append(i)
-                    if no_dependencies:
-                        tk.messagebox.showerror(lang["text.gui.msg.title.error"],
-                                                lang["text.gui.menu.plugins.tips.no_dependencies"].format(
-                                                    ",".join(no_dependencies)))
-                    else:
-                        try:
-                            for j in info["files"]:
-                                if j["position"] == "enable":
-                                    try:
-                                        with open(os.path.join("plugin", key, j["file"]), encoding="utf-8") as f:
-                                            if j["wait"]:
-                                                exec(f.read(), globals(), locals())
-                                            else:
-                                                threading.Thread(name=info["name"], target=exec,
-                                                                 args=(f.read(), globals(), locals())).start()
-                                    except FileNotFoundError:
-                                        pass
-                        except Exception as err:
-                            tk.messagebox.showerror(info["name"], str(err))
-                        plugins[info["path"]] = info
+                else:
+                    no_dependencies.append(d)
+            if no_dependencies:
+                tk.messagebox.showerror(lang["text.gui.msg.title.error"],
+                                        lang["text.gui.menu.plugins.tips.no_dependencies"].format(
+                                            ",".join(no_dependencies)))
+            else:
+                try:
+                    for j in info["files"]:
+                        if j["position"] == "enable":
+                            try:
+                                with open(os.path.join("plugin", key, j["file"]), encoding="utf-8") as f:
+                                    if j["wait"]:
+                                        exec(f.read(), globals(), locals())
+                                    else:
+                                        threading.Thread(name=info["name"], target=exec,
+                                                         args=(f.read(), globals(), locals())).start()
+                            except FileNotFoundError:
+                                pass
+                except Exception as err:
+                    tk.messagebox.showerror(info["name"], str(err))
+                plugins.append(info["path"])
         else:
-            del plugins[info["path"]]
-        enable_button.config(text=lang["text.gui.menu.plugin.disable"] if info["path"] in plugins.keys() else lang[
+            plugins.remove(info["path"])
+            try:
+                for j in info["files"]:
+                    if j["position"] == "disable":
+                        try:
+                            with open(os.path.join("plugin", key, j["file"]), encoding="utf-8") as f:
+                                if j["wait"]:
+                                    exec(f.read(), globals(), locals())
+                                else:
+                                    threading.Thread(name=info["name"], target=exec,
+                                                     args=(f.read(), globals(), locals())).start()
+                        except FileNotFoundError:
+                            pass
+            except Exception as err:
+                tk.messagebox.showerror(info["name"], str(err))
+        enable_button.config(text=lang["text.gui.menu.plugin.disable"] if info["path"] in plugins else lang[
             "text.gui.menu.plugin.enable"])
 
     def show_info(e=None):
         info = pluginlist[pluginchoose.selection_get()]
         pluginname.config(text=info["name"])
         pluginversion.config(text=lang["text.gui.menu.plugin.version_tip"] + info["version"])
-        enable_button.config(text=lang["text.gui.menu.plugin.disable"] if info["path"] in plugins.keys() else lang[
+        enable_button.config(text=lang["text.gui.menu.plugin.disable"] if info["path"] in plugins else lang[
             "text.gui.menu.plugin.enable"])
-        if enable_button.cget("text") == lang["text.gui.menu.plugin.disable"]:
-            if plugins[info["path"]] != info:
-                enable_button.config(text=lang["text.gui.menu.plugin.profile.update"])
         e_.config(state='normal')
         e_.delete("0.0", "end")
         e_.insert("end", info["description"])
@@ -857,8 +1038,8 @@ def topmost():
     window.wm_attributes('-topmost', top.get())
 
 
-version = 4.1
-update_date = "2023/10/01"
+version = "4.2"
+update_date = "2024/3/1"
 debug_mode = False
 font = ("Microsoft YaHei UI", 10, "")
 encodings = ["GBK", "UTF-8", "UTF-16", "BIG5", "shift_jis"]
@@ -869,7 +1050,7 @@ for i in os.listdir(".\\lang"):
         try:
             with open(os.path.join(".\lang", i), encoding="utf-8") as lang_file:
                 all_lang[i[:-5]] = json.load(lang_file)
-        except:
+        except Exception:
             pass
 try:
     lang = all_lang[locale.windows_locale[win32api.GetUserDefaultLangID()]]
@@ -886,26 +1067,31 @@ U = tk.BooleanVar(value=False)
 b = tk.BooleanVar(value=False)
 ignore = tk.BooleanVar(value=False)
 encoding = tk.StringVar(value="auto")
-plugins = {}
+file_url = ""
+plugins = []
 read_config()
 del_list = []
-for key, i in plugins.items():
-    try:
-        for j in i["files"]:
-            if j["position"] == "init":
-                try:
-                    with open(os.path.join("plugin", key, j["file"]), encoding="utf-8") as f:
-                        if j["wait"]:
-                            exec(f.read(), globals(), locals())
-                        else:
-                            threading.Thread(name=i["name"], target=exec, args=(f.read(), globals(), locals())).start()
-                except FileNotFoundError:
-                    del_list.append(key)
-    except Exception as err:
-        tk.messagebox.showerror(i["name"], str(err))
-        del_list.append(key)
+for i in os.listdir("plugin"):
+    if i in plugins and os.path.isdir(os.path.join("plugin", i)):
+        with open(os.path.join("plugin", i, "package.json"), encoding="utf-8") as f:
+            info = json.load(f)
+            try:
+                for j in info["files"]:
+                    if j["position"] == "init":
+                        try:
+                            with open(os.path.join("plugin", i, j["file"]), encoding="utf-8") as f:
+                                if j["wait"]:
+                                    exec(f.read(), globals(), locals())
+                                else:
+                                    threading.Thread(name=info["name"], target=exec,
+                                                     args=(f.read(), globals(), locals())).start()
+                        except FileNotFoundError:
+                            del_list.append(i)
+            except Exception as err:
+                tk.messagebox.showerror(info["name"], str(err))
+                del_list.append(i)
 for i in del_list:
-    del plugins[i]
+    plugins.remove(i)
 for key in (lang_raw.keys() - lang.keys()):
     lang[key] = lang_raw[key]
 fontname = tk.StringVar(value=font[0])
@@ -914,10 +1100,6 @@ fontsize = tk.IntVar(value=font[1])
 window.title(lang["text.gui.title"])
 window.geometry('400x500')
 window.iconbitmap(lang["path.gui.ico"])
-if len(sys.argv) > 1:
-    open_file(sys.argv[1])
-else:
-    file_url = ""
 
 f = tk.ttk.Frame(window, relief="groove", borderwidth=2)
 s1 = tk.ttk.Scrollbar(f, orient=tk.VERTICAL)
@@ -1078,21 +1260,27 @@ windnd.hook_dropfiles(e, func=drop(open_file))
 window.config(menu=menubar)
 window.protocol('WM_DELETE_WINDOW', exit_window)
 del_list = []
-for key, i in plugins.items():
-    try:
-        for j in i["files"]:
-            if j["position"] == "main":
-                try:
-                    with open(os.path.join("plugin", key, j["file"]), encoding="utf-8") as f:
-                        if j["wait"]:
-                            exec(f.read(), globals(), locals())
-                        else:
-                            threading.Thread(name=i["name"], target=exec, args=(f.read(), globals(), locals())).start()
-                except FileNotFoundError:
-                    del_list.append(key)
-    except Exception as err:
-        tk.messagebox.showerror(i["name"], str(err))
-        del_list.append(key)
+for i in os.listdir("plugin"):
+    if i in plugins and os.path.isdir(os.path.join("plugin", i)):
+        with open(os.path.join("plugin", i, "package.json"), encoding="utf-8") as f:
+            info = json.load(f)
+            try:
+                for j in info["files"]:
+                    if j["position"] == "main":
+                        try:
+                            with open(os.path.join("plugin", i, j["file"]), encoding="utf-8") as f:
+                                if j["wait"]:
+                                    exec(f.read(), globals(), locals())
+                                else:
+                                    threading.Thread(name=info["name"], target=exec,
+                                                     args=(f.read(), globals(), locals())).start()
+                        except FileNotFoundError:
+                            del_list.append(i)
+            except Exception as err:
+                tk.messagebox.showerror(info["name"], str(err))
+                del_list.append(i)
 for i in del_list:
-    del plugins[i]
+    plugins.remove(i)
+if len(sys.argv) > 1:
+    open_file(sys.argv[1])
 window.mainloop()
