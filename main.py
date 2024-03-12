@@ -103,6 +103,7 @@ def q(func):
 @q
 def make_new():
     e.delete('0.0', 'end')
+    e.edit_reset()
     global file_url
     file_url = ""
 
@@ -180,6 +181,7 @@ def open_file(url=""):
     file_url = url
     window.title(lang["text.gui.title.fileopened"] + file_url)
     e.insert('end', text)
+    e.edit_reset()
 
 
 def save():
@@ -339,6 +341,59 @@ def wrap_():
         e.config(wrap=tk.NONE)
 
 
+def compare_version_number(o_ver, n_ver):
+    if o_ver == n_ver:
+        return 0
+    o_vers = o_ver.split(".")
+    n_vers = n_ver.split(".")
+    if int(o_vers[0]) > int(n_vers[0]):
+        return -1
+    elif int(o_vers[0]) < int(n_vers[0]):
+        return 1
+    else:
+        if len(o_vers[1].split("-")) > 1 or len(n_vers[1].split("-")) > 1:
+            if int(o_vers[1].split("-")[0]) > int(n_vers[1].split("-")[0]):
+                return -1
+            elif int(o_vers[1].split("-")[0]) < int(n_vers[1].split("-")[0]):
+                return 1
+            else:
+                if o_vers[1].split("-")[1] == "beta":
+                    return 1
+                elif n_vers[1].split("-")[1] == "beta":
+                    return -1
+                else:
+                    return 0
+        else:
+            if int(o_vers[1]) > int(n_vers[1]):
+                return -1
+            elif int(o_vers[1]) < int(n_vers[1]):
+                return 1
+            else:
+                if len(o_vers) > len(n_vers):
+                    return -1
+                elif len(o_vers) < len(n_vers):
+                    return 1
+                elif len(o_vers[2].split("-")) > 1 or len(n_vers[2].split("-")) > 1:
+                    if int(o_vers[2].split("-")[0]) > int(n_vers[2].split("-")[0]):
+                        return -1
+                    elif int(o_vers[2].split("-")[0]) < int(n_vers[2].split("-")[0]):
+                        return 1
+                    else:
+                        if o_vers[2].split("-")[1] == "beta":
+                            return 1
+                        elif n_vers[2].split("-")[1] == "beta":
+                            return -1
+                        else:
+                            return 0
+                else:
+                    if int(o_vers[2]) > int(n_vers[2]):
+                        return -1
+                    elif int(o_vers[2]) < int(n_vers[2]):
+                        return 1
+                    else:
+                        return 0
+
+
 def send_printer():
     del_list = []
     for i in os.listdir("plugin"):
@@ -398,6 +453,7 @@ def send_printer():
                         tk.messagebox.showerror(info["name"], str(err))
         for i in del_list:
             plugins.remove(i)
+
         def send_to_printer(text, font):
             dc = win32ui.CreateDC()
             dc.CreatePrinterDC(prcombo.get())
@@ -416,7 +472,7 @@ def send_printer():
                     underline = True
                 converted_font = {
                     'name': name,
-                    'height': height*10,
+                    'height': height * 10,
                     'weight': weight,
                     'italic': italic,
                     'underline': underline
@@ -780,6 +836,7 @@ def read_config(path=os.path.dirname(sys.argv[0])):
             os.mkdir(path)
         write_config()
 
+
 def rmdir(dir_path):
     if os.path.isfile(dir_path):
         try:
@@ -791,6 +848,7 @@ def rmdir(dir_path):
         for file_name in file_list:
             rmdir(os.path.join(dir_path, file_name))
         os.rmdir(dir_path)
+
 
 def install_plugin(file):
     with zipfile.ZipFile(file) as f:
@@ -818,8 +876,12 @@ def install_plugin(file):
                         tk.messagebox.showerror(lang["text.gui.msg.title.error"],
                                                 lang["text.gui.menu.plugin.plugin.invalid"])
                         return
+                if compare_version_number(version, info["minsdk"]) == 1:
+                    tk.messagebox.showerror(lang["text.gui.msg.title.error"],
+                                            lang["text.gui.menu.plugin.plugin.new"])
+                    return
                 if "maxsdk" in info:
-                    if version > info["maxsdk"]:
+                    if compare_version_number(version, info["maxsdk"]) == -1:
                         tk.messagebox.showerror(lang["text.gui.msg.title.error"],
                                                 lang["text.gui.menu.plugin.plugin.old"])
                         return
@@ -890,7 +952,7 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
         if enable_button.cget("text") == lang["text.gui.menu.plugin.enable"]:
             if not is_signature(info):
                 if not tk.messagebox.askquestion(lang["text.gui.msg.title.warning"],
-                                             lang["text.gui.msg.plugin.enable_warning"]) == "yes":
+                                                 lang["text.gui.msg.plugin.enable_warning"]) == "yes":
                     return
             no_dependencies = []
             for d in info["dependencies"]:
@@ -953,7 +1015,9 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
 
     def install(file=""):
         if file == "":
-            file = tk.filedialog.askopenfilename(title=lang["text.gui.file.plugin.title"], filetypes=[(lang["text.gui.file.plugin.type"], '.zip')], parent=pluginwindow)
+            file = tk.filedialog.askopenfilename(title=lang["text.gui.file.plugin.title"],
+                                                 filetypes=[(lang["text.gui.file.plugin.type"], '.zip')],
+                                                 parent=pluginwindow)
         install_plugin(file)
         pluginwindow.destroy()
         plugin()
@@ -1038,8 +1102,8 @@ def topmost():
     window.wm_attributes('-topmost', top.get())
 
 
-version = "4.2"
-update_date = "2024/3/1"
+version = "4.2.1"
+update_date = "2024/3/12"
 debug_mode = False
 font = ("Microsoft YaHei UI", 10, "")
 encodings = ["GBK", "UTF-8", "UTF-16", "BIG5", "shift_jis"]
@@ -1055,8 +1119,8 @@ for i in os.listdir(".\\lang"):
 try:
     lang = all_lang[locale.windows_locale[win32api.GetUserDefaultLangID()]]
 except KeyError:
-    lang = all_lang["en_US"]
-lang_raw = lang.copy()
+    lang = {}
+lang_raw = all_lang["en_US" if "en_US" in list(all_lang.keys()) else list(all_lang.keys())[0]]
 window = tk.Tk()
 window.tk.call('tk', 'scaling', ScaleFactor / 75)
 top = tk.BooleanVar(value=False)
