@@ -18,7 +18,7 @@ Pynotepad是一个用python编写的文本编辑器，支持更多格式及插�
 # 运行源代码
 1. 克隆这个仓库
 2. 打开命令提示符
-3. 输入 python -m pip install -r requirements.txt 以安装依赖
+3. 输入 `python -m pip install -r requirements.txt` 以安装依赖
 4. 运行 main.py 即可
 
 # Bug与建议
