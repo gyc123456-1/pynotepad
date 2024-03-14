@@ -1,7 +1,7 @@
 name: 漏洞报告
 description: 帮助我们修复漏洞
 title: "[Bug] "
-labels: ["漏洞/bug"]
+labels: ["Bug", "新请求"]
 body:
 - type: checkboxes
   id: "yml-1"
