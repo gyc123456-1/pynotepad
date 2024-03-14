@@ -1,0 +1,40 @@
+name: 漏洞报告
+description: 帮助我们修复漏洞
+title: "[Bug] "
+labels: ["漏洞/bug"]
+body:
+- type: checkboxes
+  id: "yml-1"
+  attributes:
+    label: "检查项"
+    description: "请逐个检查下列项目，并勾选确认。"
+    options:
+    - label: "我正在使用最新版本（beta版也算）。"
+      required: true
+    - label: "我已在 [Issues 页面](https://github.com/gyc123456-1/pynotepad/issues?q=is%3Aissue+) 中搜索，确认了这一 Bug 未被提交过。"
+      required: true
+- type: textarea
+  id: "yml-2"
+  attributes:
+    label: 描述
+    description: "详细描述该 Bug 的具体表现。"
+  validations:
+    required: true
+- type: textarea
+  id: "yml-3"
+  attributes:
+    label: 重现步骤
+    description: "详细描述要怎么操作才能再次触发这个 Bug。"
+    value: |
+      1、点击xxxx
+      2、选中xxxx
+  validations:
+    required: true
+- type: textarea
+  id: "yml-4"
+  attributes:
+    label: 屏幕截图与附件
+    description: "上传报错的屏幕截图，如有需要，请上传附件。"
+    placeholder: "先点击这个文本框，然后再将文件直接拖拽到文本框中以上传。"
+  validations:
+    required: true
