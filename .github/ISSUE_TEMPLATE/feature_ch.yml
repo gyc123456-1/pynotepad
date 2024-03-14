@@ -1,7 +1,7 @@
 name: 功能请求
 description: 为这个项目提一个建议
 title: "[FR] "
-labels: ["功能请求/feature request"]
+labels: ["功能请求", "新请求"]
 body:
 - type: checkboxes
   id: "yml-1"
