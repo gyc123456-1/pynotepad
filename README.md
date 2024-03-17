@@ -1,6 +1,6 @@
 # Pynotepad
 
-Pynotepad是一个用python编写的文本编辑器，支持更多格式及插件
+Pynotepad是一个用python编写的文本编辑器，支持更多编码及插件
 
 ![GitHub last commit (by committer)](https://img.shields.io/github/last-commit/gyc123456-1/pynotepad)![GitHub Release Date - Published_At](https://img.shields.io/github/release-date/gyc123456-1/pynotepad)![GitHub release (with filter)](https://img.shields.io/github/v/release/gyc123456-1/pynotepad)![GitHub all releases](https://img.shields.io/github/downloads/gyc123456-1/pynotepad/total)![GitHub repo size](https://img.shields.io/github/repo-size/gyc123456-1/pynotepad.svg)![GitHub](https://img.shields.io/github/license/gyc123456-1/pynotepad.svg)
 
