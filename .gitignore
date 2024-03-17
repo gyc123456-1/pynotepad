@@ -75,3 +75,6 @@ dmypy.json
 .pyre/
 .pytype/
 cython_debug/
+*.pem
+signature.py
+config.ini
