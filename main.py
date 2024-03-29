@@ -374,6 +374,7 @@ def exit_window():
                                 pass
                 except Exception as err:
                     tk.messagebox.showerror(info["name"], str(err))
+    write_config()
     window.quit()
 
 
@@ -1203,8 +1204,8 @@ def topmost():
     window.wm_attributes('-topmost', top.get())
 
 
-version = "4.3"
-update_date = "2024/3/28"
+version = "4.3.1"
+update_date = "2024/3/29"
 font = ("Microsoft YaHei UI", 10, "")
 encodings = ["GBK", "UTF-16", "BIG5", "shift_jis", "UTF-8"]
 file_coding = encodings[0]
