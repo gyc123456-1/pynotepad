@@ -16,9 +16,9 @@ jobs:
           pyinstaller pynotepad.spec
       - name: 复制资源文件
         run: |
-          xcopy .\ico\ .\dist\pynotepad\ /s /e
-          xcopy .\lang\ .\dist\pynotepad\ /s /e
-          xcopy .\plugins\ .\dist\pynotepad\ /s /e
+          xcopy .\ico\ .\dist\pynotepad\ico\ /s /e
+          xcopy .\lang\ .\dist\pynotepad\lang\ /s /e
+          xcopy .\plugins\ .\dist\pynotepad\plugins\ /s /e
       - name: 上传打包项目
         uses: actions/upload-artifact@v4
         with:
