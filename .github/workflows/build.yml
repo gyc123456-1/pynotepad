@@ -1,0 +1,28 @@
+name: Pynotepad 打包
+on: [ push ]
+
+jobs:
+  windows:
+    if: contains(github.event.head_commit.message, '[不构建]') == false
+    runs-on: windows-latest
+    steps:
+      - name: 结算仓库
+        uses: actions/checkout@v2
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+      - name: validate gradle wrapper
+        uses: gradle/wrapper-validation-action@v1
+      - name: setup jdk 8.0
+        uses: actions/setup-java@v2
+        with:
+          distribution: adopt
+          java-version: 8.0
+      - name: make gradle wrapper executable
+        run: chmod +x ./gradlew
+      - name: build
+        run: ./gradlew build
+      - name: capture build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: TrChat Artifacts
+          path: plugin/build/libs/
