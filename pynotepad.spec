@@ -38,6 +38,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=['.\\ico\\Notepad.ico'],
+    contents_directory='libs',
 )
 coll = COLLECT(
     exe,
