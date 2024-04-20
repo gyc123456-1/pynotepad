@@ -20,7 +20,7 @@ jobs:
           xcopy .\lang .\dist\pynotepad /s /e
           xcopy .\plugins .\dist\pynotepad /s /e
       - name: 上传打包项目
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: 打包内容
           path: dist/pynotepad
