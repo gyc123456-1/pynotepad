@@ -11,7 +11,9 @@ jobs:
       - name: 安装依赖
         run: pip install -r requirements.txt
       - name: 编译脚本
-        run: pyinstaller pynotepad.spec
+        run: |
+          pip install pyinstaller
+          pyinstaller pynotepad.spec
       - name: 复制资源文件
         run: |
           xcopy ./ico ./dist/pynotepad /s /e
