@@ -13,10 +13,10 @@ jobs:
       - name: 编译脚本
         run: pyinstaller pynotepad.spec
       - name: 复制资源文件
-        run:
-          - xcopy ./ico ./dist/pynotepad /s /e
-          - xcopy ./lang ./dist/pynotepad /s /e
-          - xcopy ./plugins ./dist/pynotepad /s /e
+        run: |
+          xcopy ./ico ./dist/pynotepad /s /e
+          xcopy ./lang ./dist/pynotepad /s /e
+          xcopy ./plugins ./dist/pynotepad /s /e
       - name: 上传打包项目
         uses: actions/upload-artifact@v2
         with:
