@@ -37,7 +37,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['D:\\Users\\gyc\\Desktop\\文件\\python\\pynotepad\\ico\\Notepad.ico'],
+    icon=['.\\ico\\Notepad.ico'],
 )
 coll = COLLECT(
     exe,
