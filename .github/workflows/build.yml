@@ -13,9 +13,7 @@ jobs:
       - name: 编译脚本
         run: |
           pip install pyinstaller
-          # pyinstaller pynotepad.spec
-          pyinstaller main.py  --contents-directory libs
-          type main.spec
+          pyinstaller pynotepad.spec
       - name: 复制资源文件
         run: |
           xcopy .\ico .\dist\pynotepad /s /e /t
