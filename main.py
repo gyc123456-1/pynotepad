@@ -1161,8 +1161,8 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
         plugin()
 
     def delete():
+        info = pluginlist[pluginname.cget("text")]
         if tk.messagebox.askquestion(lang["text.gui.title"], lang["text.gui.menu.plugin.delete.warning"]) == "yes":
-            plugins.remove(pluginlist[pluginname.cget("text")]["path"])
             try:
                 for j in info["files"]:
                     if j["position"] == "delete":
@@ -1191,8 +1191,8 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
                     os.rmdir(dir_path)
 
             rmdir(os.path.join("plugins", info["path"]))
-            del pluginlist[info["path"]]
             try:
+                del pluginlist[info["name"]]
                 plugins.remove(info["path"])
             except Exception:
                 pass
@@ -1244,7 +1244,7 @@ def topmost():
     window.wm_attributes('-topmost', top.get())
 
 
-version = "4.3.1-beta"
+version = "4.3.2-beta"
 update_date = "2024/3/29(没错，现在才发布)"
 font = ("Microsoft YaHei UI", 10, "")
 encodings = ["GBK", "UTF-16", "BIG5", "shift_jis", "UTF-8"]
