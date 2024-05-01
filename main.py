@@ -99,10 +99,46 @@ def q(func):
 
 @q
 def make_new():
+    for i in os.listdir("plugins"):
+        if i in plugins and os.path.isdir(os.path.join("plugins", i)):
+            with open(os.path.join("plugins", i, "plugin.json"), encoding="utf-8") as f:
+                info = json.load(f)
+                try:
+                    for j in info["files"]:
+                        if j["position"] == "before_new":
+                            try:
+                                with open(os.path.join("plugins", i, j["file"]), encoding="utf-8") as f:
+                                    if j["wait"]:
+                                        exec(f.read(), globals(), locals())
+                                    else:
+                                        threading.Thread(name=info["name"], target=exec,
+                                                         args=(f.read(), globals(), locals())).start()
+                            except FileNotFoundError:
+                                pass
+                except Exception as err:
+                    tk.messagebox.showerror(info["name"], str(err))
     e.delete('0.0', 'end')
     e.edit_reset()
     global file_url
     file_url = ""
+    for i in os.listdir("plugins"):
+        if i in plugins and os.path.isdir(os.path.join("plugins", i)):
+            with open(os.path.join("plugins", i, "plugin.json"), encoding="utf-8") as f:
+                info = json.load(f)
+                try:
+                    for j in info["files"]:
+                        if j["position"] == "after_new":
+                            try:
+                                with open(os.path.join("plugins", i, j["file"]), encoding="utf-8") as f:
+                                    if j["wait"]:
+                                        exec(f.read(), globals(), locals())
+                                    else:
+                                        threading.Thread(name=info["name"], target=exec,
+                                                         args=(f.read(), globals(), locals())).start()
+                            except FileNotFoundError:
+                                pass
+                except Exception as err:
+                    tk.messagebox.showerror(info["name"], str(err))
 
 
 def drop(func):
@@ -1125,8 +1161,8 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
         plugin()
 
     def delete():
-        info = pluginlist[pluginname.cget("text")]
         if tk.messagebox.askquestion(lang["text.gui.title"], lang["text.gui.menu.plugin.delete.warning"]) == "yes":
+            plugins.remove(pluginlist[pluginname.cget("text")]["path"])
             try:
                 for j in info["files"]:
                     if j["position"] == "delete":
@@ -1156,6 +1192,10 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
 
             rmdir(os.path.join("plugins", info["path"]))
             del pluginlist[info["path"]]
+            try:
+                plugins.remove(info["path"])
+            except Exception:
+                pass
             pluginwindow.destroy()
             plugin()
 
@@ -1204,8 +1244,8 @@ def topmost():
     window.wm_attributes('-topmost', top.get())
 
 
-version = "4.3.1"
-update_date = "2024/3/29"
+version = "4.3.1-beta"
+update_date = "2024/3/29(没错，现在才发布)"
 font = ("Microsoft YaHei UI", 10, "")
 encodings = ["GBK", "UTF-16", "BIG5", "shift_jis", "UTF-8"]
 file_coding = encodings[0]
