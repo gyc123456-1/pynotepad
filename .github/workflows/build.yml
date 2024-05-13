@@ -1,5 +1,8 @@
 name: Pynotepad 打包
-on: [ push ]
+on:
+  push:
+    branches:
+    - main
 
 jobs:
   windows:
