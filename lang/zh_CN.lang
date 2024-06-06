@@ -74,15 +74,6 @@
         "编辑(E)",
         3
     ],
-    "text.gui.menu.view.file_info": [
-        "文件信息(I)",
-        5
-    ],
-    "text.gui.menu.view.file_info.infos": [
-        "编码",
-        "行数",
-        "大小"
-    ],
     "text.gui.menu.view.font": [
         "字体(F)...",
         3
@@ -175,7 +166,7 @@
     "text.gui.file.save_as.title": "另存为",
     "text.gui.file.decoding.tips.error": "解码错误, 请到编码菜单换一种编码!",
     "text.gui.file.open.title": "打开文件",
-    "text.gui.file.exit_save": "你想将更改保存吗?",
+    "text.gui.file.exit_save": "你想保存更改吗?",
     "text.gui.menu.plugins.tips.no_dependencies": "缺少依赖项: {}",
     "text.gui.menu.view.topmost": [
         "窗口置顶(T)",
@@ -192,5 +183,6 @@
     "text.gui.menu.plugin.delete": "删除",
     "text.gui.menu.plugin.delete.warning": "是否要删除这个插件?",
     "text.gui.file.plugin.title": "选择插件文件",
-    "text.gui.file.plugin.type": "插件文件"
+    "text.gui.file.plugin.type": "插件文件",
+    "text.gui.status_bar.text": "行 {rows}/{rows_total}, 列 {columns}/{columns_total} | {chars} 个字符 | {file_size} | {encoding}"
 }

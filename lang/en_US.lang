@@ -74,15 +74,6 @@
         "Edit",
         0
     ],
-    "text.gui.menu.view.file_info": [
-        "File Info",
-        5
-    ],
-    "text.gui.menu.view.file_info.infos": [
-        "Encoding",
-        "Row for total",
-        "Size"
-    ],
     "text.gui.menu.view.font": [
         "Font...",
         0
@@ -192,5 +183,6 @@
     "text.gui.menu.plugin.delete": "Delete",
     "text.gui.menu.plugin.delete.warning": "Do you want to delete this plugin?",
     "text.gui.file.plugin.title": "Choice plugin file",
-    "text.gui.file.plugin.type": "Plugin Files"
+    "text.gui.file.plugin.type": "Plugin Files",
+    "text.gui.status_bar.text": "Rows {rows}/{rows_total}, Columns {columns}/{columns_total} | {chars} characters | {file_size} | {encoding}"
 }

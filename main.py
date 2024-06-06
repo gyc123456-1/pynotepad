@@ -32,7 +32,7 @@ def q(func):
         if file_url != "":
             if encoding.get() == "auto":
                 for i in reversed(encodings):
-                    if b.get():
+                    if isbin_mode.get():
                         with open(file_url, "rb") as f:
                             text = str(f.read())[2:-1]
                             break
@@ -48,7 +48,7 @@ def q(func):
                 else:
                     text = ""
             else:
-                if b.get():
+                if isbin_mode.get():
                     with open(file_url, "rb") as f:
                         text = str(f.read())[2:-1]
                 else:
@@ -114,7 +114,7 @@ def open_file(url=""):
     file_url = ""
     text = ""
     file_url = url
-    if b.get():
+    if isbin_mode.get():
         with open(url, "rb") as f:
             text = str(f.read())[2:-1]
     else:
@@ -156,7 +156,7 @@ def save():
         plugin_object.run_plugins("save_to_as", globals(), locals())
         return save_as()
     else:
-        if b.get():
+        if isbin_mode.get():
             with open(file_url, "wb") as f:
                 try:
                     f.write(eval("b'" + e.get("0.0", "end")[:-1] + "'"))
@@ -190,7 +190,7 @@ def save_as():
     url = tk.filedialog.asksaveasfilename(title=lang["text.gui.file.save_as.title"],
                                           filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"),
                                                      (lang["text.gui.file.open.type.all"], ".*")])
-    if b.get():
+    if isbin_mode.get():
         with open(url, "wb") as f:
             try:
                 f.write(eval("b'" + e.get("0.0", "end")[:-1] + "'"))
@@ -230,18 +230,18 @@ def exit_window():
 def font_():
     global font
     t = ""
-    if B.get():
+    if isbold.get():
         t += "bold "
-    if I.get():
+    if isitalic.get():
         t += "italic "
-    if U.get():
+    if isunderline.get():
         t += "underline"
     font = (fontname.get(), fontsize.get(), t)
     e.config(font=font)
 
 
 def wrap_():
-    if wrap.get():
+    if iswrapmode.get():
         e.config(wrap=tk.WORD)
     else:
         e.config(wrap=tk.NONE)
@@ -389,11 +389,11 @@ def font_settings():
     menubar.add_cascade(label=lang["text.gui.menu.font.menu.font_size"][0], menu=fontsizemenu,
                         underline=lang["text.gui.menu.font.menu.font_size"][1])
     fonteffectmenu = tk.Menu(menubar, tearoff=0)
-    fonteffectmenu.add_checkbutton(label=lang["text.gui.menu.font.menu.font_effect.bold"][0], variable=B,
+    fonteffectmenu.add_checkbutton(label=lang["text.gui.menu.font.menu.font_effect.bold"][0], variable=isbold,
                                    underline=lang["text.gui.menu.font.menu.font_effect.bold"][1], command=font_)
-    fonteffectmenu.add_checkbutton(label=lang["text.gui.menu.font.menu.font_effect.italic"][0], variable=I,
+    fonteffectmenu.add_checkbutton(label=lang["text.gui.menu.font.menu.font_effect.italic"][0], variable=isitalic,
                                    underline=lang["text.gui.menu.font.menu.font_effect.italic"][1], command=font_)
-    fonteffectmenu.add_checkbutton(label=lang["text.gui.menu.font.menu.font_effect.underline"][0], variable=U,
+    fonteffectmenu.add_checkbutton(label=lang["text.gui.menu.font.menu.font_effect.underline"][0], variable=isunderline,
                                    underline=lang["text.gui.menu.font.menu.font_effect.underline"][1],
                                    command=font_)
     menubar.add_cascade(label=lang["text.gui.menu.font.menu.font_effect"][0], menu=fonteffectmenu,
@@ -635,7 +635,7 @@ def replace_str():
 
 
 def get_size():
-    if b.get():
+    if isbin_mode.get():
         size = len(eval("b'" + e.get("0.0", "end")[:-1] + "'"))
     else:
         size = len(e.get("0.0", "end")[:-1].encode(file_coding))
@@ -648,8 +648,8 @@ def get_size():
 
 
 def bin_mode():
-    b.set(not b.get())
-    q(lambda: b.set(not b.get()))()
+    isbin_mode.set(not isbin_mode.get())
+    q(lambda: isbin_mode.set(not isbin_mode.get()))()
     if file_url != "":
         open_file(file_url)
 
@@ -657,10 +657,10 @@ def bin_mode():
 def write_config(path=os.path.dirname(sys.argv[0])):
     with open(os.path.join(path, "config.ini"), "w") as f:
         json.dump({"font": font,
-                   "wrap": wrap.get(),
-                   "bold": B.get(),
-                   "italic": I.get(),
-                   "underline": U.get(),
+                   "wrap": iswrapmode.get(),
+                   "bold": isbold.get(),
+                   "italic": isitalic.get(),
+                   "underline": isunderline.get(),
                    "ignore": ignore.get(),
                    "plugins": plugins}, f)
 
@@ -672,10 +672,10 @@ def read_config(path=os.path.dirname(sys.argv[0])):
         with open(os.path.join(path, "config.ini")) as f:
             config = json.load(f)
         font = config["font"]
-        wrap.set(config["wrap"])
-        B.set(config["bold"])
-        I.set(config["italic"])
-        U.set(config["underline"])
+        iswrapmode.set(config["wrap"])
+        isbold.set(config["bold"])
+        isitalic.set(config["italic"])
+        isunderline.set(config["underline"])
         ignore.set(config["ignore"])
         plugins = config["plugins"]
         if type(plugins) != list:
@@ -969,12 +969,47 @@ class Plugins:
             rmdir(tempdir)
 
 
+class TextPlus(tk.Text):
+    def __init__(self, *args, **kwargs):
+        tk.Text.__init__(self, *args, **kwargs)
+        self._orig = self._w + '_orig'
+        self.tk.call('rename', self._w, self._orig)
+        self.tk.createcommand(self._w, self._proxy)
+
+    def _proxy(self, command, *args):
+        if command == 'get' and (args[0] == 'sel.first' and args[1] == 'sel.last') and not self.tag_ranges('sel'):
+            return
+        if command == 'delete' and (args[0] == 'sel.first' and args[1] == 'sel.last') and not self.tag_ranges('sel'):
+            return
+        cmd = (self._orig, command) + args
+        result = self.tk.call(cmd)
+        if command in ('insert', 'delete', 'replace'):
+            self.event_generate('<<TextModified>>')
+        return result
+
+
 def topmost():
-    window.wm_attributes('-topmost', top.get())
+    window.wm_attributes('-topmost', istopmost.get())
 
 
-version = "4.3.2"
-update_date = "2024/6/3"
+def update_status_bar(event=""):
+    cr, cc = map(int, e.index("insert").split("."))
+    status_bar_var.set(
+        lang["text.gui.status_bar.text"].format(rows=cr, rows_total=len(e.get("0.0", "end").split("\n")) - 1,
+                                                columns=cc + 1,
+                                                columns_total=len(e.get("{}.0".format(cr),
+                                                                        "{}.0".format(cr + 1))) - 1,
+                                                chars=len(e.get('0.0', 'end')) - 1, file_size=get_size(),
+                                                encoding=file_coding))
+
+
+def on_modify(event):
+    e.edit_separator()
+    update_status_bar()
+
+
+version = "4.4"
+update_date = "2024/6/6"
 font = ("Microsoft YaHei UI", 10, "")
 encodings = ["GBK", "UTF-16", "BIG5", "shift_jis", "UTF-8"]
 file_coding = encodings[0]
@@ -1003,12 +1038,12 @@ except KeyError:
 lang_raw = all_lang["en_US" if "en_US" in list(all_lang.keys()) else list(all_lang.keys())[0]]
 window = tk.Tk()
 window.tk.call('tk', 'scaling', ScaleFactor / 75)
-top = tk.BooleanVar(value=False)
-wrap = tk.BooleanVar(value=False)
-B = tk.BooleanVar(value=False)
-I = tk.BooleanVar(value=False)
-U = tk.BooleanVar(value=False)
-b = tk.BooleanVar(value=False)
+istopmost = tk.BooleanVar(value=False)
+iswrapmode = tk.BooleanVar(value=False)
+isbold = tk.BooleanVar(value=False)
+isitalic = tk.BooleanVar(value=False)
+isunderline = tk.BooleanVar(value=False)
+isbin_mode = tk.BooleanVar(value=False)
 ignore = tk.BooleanVar(value=False)
 encoding = tk.StringVar(value="auto")
 file_url = ""
@@ -1022,18 +1057,26 @@ fontsize = tk.IntVar(value=font[1])
 
 window.title(lang["text.gui.title"])
 window.geometry('400x500')
+window.minsize(300, 20)
 window.iconbitmap(lang["path.gui.ico"])
 
+# 文本框初始化
 f = tk.ttk.Frame(window, relief="groove", borderwidth=2)
+# 滚动条
 s1 = tk.ttk.Scrollbar(f, orient=tk.VERTICAL)
 s2 = tk.ttk.Scrollbar(f, orient=tk.HORIZONTAL)
-e = tk.Text(f, wrap=tk.NONE, yscrollcommand=s1.set, xscrollcommand=s2.set, font=font, undo=True, relief="flat")
+# 文本框
+e = TextPlus(f, wrap=tk.NONE, yscrollcommand=s1.set, xscrollcommand=s2.set, font=font, undo=True, relief="flat")
 s1.pack(side=tk.RIGHT, fill=tk.BOTH)
 s1.config(command=e.yview)
 s2.pack(side=tk.BOTTOM, fill=tk.BOTH)
 s2.config(command=e.xview)
 f.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES)
+f.pack_propagate(False)  # 防止文本框占据状态栏的空间
 e.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES)
+e.focus()
+
+# 菜单栏初始化
 menubar = tk.Menu(window)
 filemenu = tk.Menu(menubar, tearoff=0)
 menubar.add_cascade(label=lang["text.gui.menu.file"][0], menu=filemenu, underline=lang["text.gui.menu.file"][1])
@@ -1103,27 +1146,15 @@ contextmenu.add_command(label=lang["text.gui.menu.edit.delete"][0], command=lamb
                         underline=lang["text.gui.menu.edit.delete"][1], accelerator="Del")
 contextmenu.add_command(label=lang["text.gui.menu.edit.select_all"][0], command=lambda: e.tag_add("sel", "0.0", "end"),
                         underline=lang["text.gui.menu.edit.select_all"][1], accelerator="Ctrl+A")
-contextmenu.add_separator()
-contextmenu.add_command(label=lang["text.gui.menu.view.file_info"][0],
-                        underline=lang["text.gui.menu.view.file_info"][1],
-                        command=lambda: tk.messagebox.showinfo(file_url, "{}:{}\n{}:{}\n{}:{}".format(
-                            lang["text.gui.menu.view.file_info.infos"][0], file_coding,
-                            lang["text.gui.menu.view.file_info.infos"][1], len(e.get("0.0", "end")[:-1]),
-                            lang["text.gui.menu.view.file_info.infos"][2], get_size())))
 viewmenu = tk.Menu(menubar, tearoff=0)
 viewmenu.add_command(label=lang["text.gui.menu.view.font"][0], command=font_settings,
                      underline=lang["text.gui.menu.view.font"][1])
 viewmenu.add_separator()
 viewmenu.add_checkbutton(label=lang["text.gui.menu.view.warp"][0], underline=lang["text.gui.menu.view.warp"][1],
-                         variable=wrap, command=wrap_)
-viewmenu.add_command(label=lang["text.gui.menu.view.file_info"][0], underline=lang["text.gui.menu.view.file_info"][1],
-                     command=lambda: tk.messagebox.showinfo(file_url, "{}:{}\n{}:{}\n{}:{}".format(
-                         lang["text.gui.menu.view.file_info.infos"][0], file_coding,
-                         lang["text.gui.menu.view.file_info.infos"][1], len(e.get("0.0", "end")[:-1]),
-                         lang["text.gui.menu.view.file_info.infos"][2], get_size())))
+                         variable=iswrapmode, command=wrap_)
 viewmenu.add_separator()
 viewmenu.add_checkbutton(label=lang["text.gui.menu.view.topmost"][0], underline=lang["text.gui.menu.view.topmost"][1],
-                         command=topmost, variable=top)
+                         command=topmost, variable=istopmost)
 menubar.add_cascade(label=lang["text.gui.menu.view"][0], menu=viewmenu, underline=lang["text.gui.menu.view"][1])
 encodingmenu = tk.Menu(menubar, tearoff=0)
 encodingmenu.add_radiobutton(label=lang["text.gui.menu.encoding.auto_encoding"][0],
@@ -1134,7 +1165,7 @@ for i in encodings:
 encodingmenu.add_separator()
 encodingmenu.add_checkbutton(label=lang["text.gui.menu.encoding.ignore_errors"][0], variable=ignore,
                              underline=lang["text.gui.menu.encoding.ignore_errors"][1])
-encodingmenu.add_checkbutton(label=lang["text.gui.menu.encoding.binary_mode"][0], variable=b,
+encodingmenu.add_checkbutton(label=lang["text.gui.menu.encoding.binary_mode"][0], variable=isbin_mode,
                              underline=lang["text.gui.menu.encoding.binary_mode"][1], command=bin_mode)
 menubar.add_cascade(label=lang["text.gui.menu.encoding"][0], menu=encodingmenu,
                     underline=lang["text.gui.menu.encoding"][1])
@@ -1150,6 +1181,12 @@ infomenu.add_command(label=lang["text.gui.menu.help.copyright"][0],
                      underline=lang["text.gui.menu.help.copyright"][1])
 menubar.add_cascade(label=lang["text.gui.menu.help"][0], menu=infomenu, underline=lang["text.gui.menu.help"][1])
 
+# 状态栏初始化
+status_bar_var = tk.StringVar()
+status_bar = tk.Label(window, textvariable=status_bar_var, relief='sunken', bd=tk.TRUE, anchor=tk.W)
+status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+
+# 快捷键绑定
 window.bind("<Control-N>", lambda event: make_new())
 window.bind("<Control-n>", lambda event: make_new())
 
@@ -1178,7 +1215,9 @@ window.bind("<Control-Shift-Z>", lambda event: e.edit_redo())
 window.bind("<Control-Shift-z>", lambda event: e.edit_redo())
 
 e.bind("<Button-3>", lambda event: contextmenu.post(event.x_root, event.y_root))
-e.bind('<Key>', lambda event: e.edit_separator())
+e.bind('<<TextModified>>', on_modify)
+e.event_add('<<CursorEvent>>', *('<KeyPress>', '<KeyRelease>', '<ButtonPress>', '<ButtonRelease>'))
+e.bind('<<CursorEvent>>', update_status_bar)
 windnd.hook_dropfiles(e, func=drop(open_file))
 window.config(menu=menubar)
 window.protocol('WM_DELETE_WINDOW', exit_window)
