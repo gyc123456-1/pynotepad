@@ -6,6 +6,8 @@ import tkinter.messagebox
 import tkinter.filedialog
 import tkinter.font
 import tkinter.ttk
+
+import chardet
 import win32api
 import win32print
 import tempfile
@@ -101,16 +103,24 @@ def drop(func):
     return warpper
 
 
+def detect_encoding(url):
+    try:
+        with open(url, 'rb') as f:
+            return chardet.detect(f.read())['encoding']
+    except Exception:
+        return file_coding
+
+
 @q
 def open_file(url=""):
+    global file_url
+    global file_coding
     plugin_object.run_plugins("before_open", globals(), locals())
     if not url:
         url = tk.filedialog.askopenfilename(title=lang["text.gui.file.open.title"],
                                             filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"),
                                                        (lang["text.gui.file.open.type.all"], ".*")])
     e.delete('0.0', 'end')
-    global file_url
-    global file_coding
     file_url = ""
     text = ""
     file_url = url
@@ -119,23 +129,19 @@ def open_file(url=""):
             text = str(f.read())[2:-1]
     else:
         if encoding.get() == "auto":
-            for i in reversed(encodings):
-                with open(url, encoding=i, errors="ignore" if ignore.get() else None) as f:
-                    try:
-                        text = f.read()
-                        file_coding = i
-                        break
-                    except UnicodeDecodeError:
-                        pass
-                    except UnicodeError:
-                        pass
-            else:
-                tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.decoding.tips.error"])
+            with open(url, encoding=detect_encoding(url), errors="ignore" if ignore.get() else None) as f:
+                try:
+                    text = f.read()
+                    file_coding = f.encoding
+                except UnicodeDecodeError:
+                    tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.decoding.tips.error"])
+                except UnicodeError:
+                    tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.decoding.tips.error"])
         else:
             with open(url, encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
                 try:
                     text = f.read()
-                    file_coding = encoding.get()
+                    file_coding = f.encoding
                 except UnicodeDecodeError:
                     tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.decoding.tips.error"])
                 except UnicodeError:
@@ -148,8 +154,8 @@ def open_file(url=""):
 
 
 def save():
-    global window
     global file_url
+    global file_coding
     plugin_object.run_plugins("before_save", globals(), locals())
     issave = False
     if file_url == "":
@@ -165,7 +171,7 @@ def save():
                     tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.encoding.tips.error"])
         else:
             if encoding.get() == "auto":
-                with open(file_url, "w", encoding=file_coding, errors="ignore" if ignore.get() else None) as f:
+                with open(file_url, "w", encoding=detect_encoding(file_url), errors="ignore" if ignore.get() else None) as f:
                     try:
                         f.write(e.get("0.0", "end")[:-1])
                         issave = True
@@ -176,6 +182,7 @@ def save():
                 with open(file_url, "w", encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
                     try:
                         f.write(e.get("0.0", "end")[:-1])
+                        file_coding = f.encoding
                         issave = True
                     except UnicodeEncodeError:
                         tk.messagebox.showerror(lang["text.gui.msg.title.error"],
@@ -185,6 +192,8 @@ def save():
 
 
 def save_as():
+    global file_url
+    global file_coding
     plugin_object.run_plugins("before_save_as", globals(), locals())
     issave = False
     url = tk.filedialog.asksaveasfilename(title=lang["text.gui.file.save_as.title"],
@@ -199,7 +208,7 @@ def save_as():
                 tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.encoding.tips.error"])
     else:
         if encoding.get() == "auto":
-            with open(url, 'w', encoding=file_coding, errors="ignore" if ignore.get() else None) as f:
+            with open(url, 'w', encoding=detect_encoding(url), errors="ignore" if ignore.get() else None) as f:
                 try:
                     f.write(e.get("0.0", "end")[:-1])
                     issave = True
@@ -209,11 +218,11 @@ def save_as():
             with open(url, 'w', encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
                 try:
                     f.write(e.get("0.0", "end")[:-1])
+                    file_coding = f.encoding
                     issave = True
                 except UnicodeEncodeError:
                     tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.encoding.tips.error"])
 
-    global file_url
     file_url = url
     window.title(lang["text.gui.title.fileopened"] + file_url)
     plugin_object.run_plugins("after_save_as", globals(), locals())
@@ -1008,11 +1017,11 @@ def on_modify(event):
     update_status_bar()
 
 
-version = "4.4"
-update_date = "2024/6/6"
+version = "4.4.1"
+update_date = "2024/6/9"
 font = ("Microsoft YaHei UI", 10, "")
 encodings = ["GBK", "UTF-16", "BIG5", "shift_jis", "UTF-8"]
-file_coding = encodings[0]
+file_coding = sys.getdefaultencoding()
 pubkey = """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAviKlXVbsyDDvqZSLLc3A
 UK86Wg/+dUMS/zneoyQoihnvtiZjcEpV7rOxW17DjZnfpgo1LkCr95LWXeqEEuJp
