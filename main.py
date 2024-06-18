@@ -6,9 +6,9 @@ import tkinter.messagebox
 import tkinter.filedialog
 import tkinter.font
 import tkinter.ttk
-
 import chardet
 import win32api
+import win32con
 import win32print
 import tempfile
 import sys
@@ -21,61 +21,35 @@ from Cryptodome.PublicKey import RSA
 from Cryptodome.Hash import SHA
 from Cryptodome.Signature import PKCS1_v1_5 as PKCS1_signature
 import ctypes
+from ctypes import wintypes
 import locale
 import zipfile
 
 ctypes.windll.shcore.SetProcessDpiAwareness(1)
+user32 = ctypes.windll.user32
 ScaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0)
 
 
 def q(func):
     def wrapper(*args, **kwargs):
         plugin_object.run_plugins("ask_save", globals(), locals())
-        if file_url != "":
-            if encoding.get() == "auto":
-                for i in reversed(encodings):
-                    if isbin_mode.get():
-                        with open(file_url, "rb") as f:
-                            text = str(f.read())[2:-1]
-                            break
-                    else:
-                        with open(file_url, encoding=i, errors="ignore" if ignore.get() else None) as f:
-                            try:
-                                text = f.read()
-                                break
-                            except UnicodeDecodeError:
-                                pass
-                            except UnicodeError:
-                                pass
-                else:
-                    text = ""
-            else:
-                if isbin_mode.get():
-                    with open(file_url, "rb") as f:
-                        text = str(f.read())[2:-1]
-                else:
-                    with open(file_url, encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
-                        try:
-                            text = f.read()
-                        except UnicodeDecodeError:
-                            text = ""
-                        except UnicodeError:
-                            text = ""
-        else:
-            text = ""
-        if text == e.get("0.0", "end")[:-1]:
+        if issave():
             func(*args, **kwargs)
         else:
             a = tk.messagebox.askyesnocancel(lang["text.gui.title"], lang["text.gui.file.exit_save"])
-            if a is None:
-                return
+            if a == None:
+                return False
             elif a:
-                if file_url == "":
+                if file_path == "":
                     if save_as() == True:
                         func(*args, **kwargs)
+                    else:
+                        return False
                 else:
                     if save() == True:
                         func(*args, **kwargs)
+                    else:
+                        return False
             else:
                 func(*args, **kwargs)
 
@@ -87,153 +61,179 @@ def make_new():
     plugin_object.run_plugins("before_new", globals(), locals())
     e.delete('0.0', 'end')
     e.edit_reset()
-    global file_url
-    file_url = ""
+    global file_path
+    file_path = ""
     plugin_object.run_plugins("after_new", globals(), locals())
 
 
 def drop(func):
     def warpper(files):
         try:
-            url = [i.decode() for i in files]
+            path = [i.decode() for i in files]
         except UnicodeDecodeError:
-            url = [i.decode("gbk") for i in files]
-        func(url[0])
+            path = [i.decode("gbk") for i in files]
+        func(path[0])
 
     return warpper
 
 
-def detect_encoding(url):
+def detect_encoding(path):
     try:
-        with open(url, 'rb') as f:
+        with open(path, 'rb') as f:
             return chardet.detect(f.read())['encoding']
     except Exception:
-        return file_coding
+        return file_encoding
+
+
+def issave():
+    plugin_object.run_plugins("is_save", globals(), locals())
+    if file_path != "":
+        if encoding.get() == "auto":
+            with open(file_path, encoding=detect_encoding(file_path), errors="ignore" if ignore.get() else None) as f:
+                try:
+                    text = f.read()
+                except UnicodeDecodeError:
+                    text = ""
+                except UnicodeError:
+                    text = ""
+        else:
+            if isbin_mode.get():
+                with open(file_path, "rb") as f:
+                    text = str(f.read())[2:-1]
+            else:
+                with open(file_path, encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
+                    try:
+                        text = f.read()
+                    except UnicodeDecodeError:
+                        text = ""
+                    except UnicodeError:
+                        text = ""
+    else:
+        text = ""
+    if text == e.get("0.0", "end")[:-1]:
+        return True
+    else:
+        return False
 
 
 @q
-def open_file(url=""):
-    global file_url
-    global file_coding
+def open_file(path=""):
+    global file_path
+    global file_encoding
     plugin_object.run_plugins("before_open", globals(), locals())
-    if not url:
-        url = tk.filedialog.askopenfilename(title=lang["text.gui.file.open.title"],
-                                            filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"),
+    if not path:
+        path = tk.filedialog.askopenfilename(title=lang["text.gui.file.open.title"],
+                                             filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"),
                                                        (lang["text.gui.file.open.type.all"], ".*")])
     e.delete('0.0', 'end')
-    file_url = ""
+    file_path = ""
     text = ""
-    file_url = url
+    file_path = path
     if isbin_mode.get():
-        with open(url, "rb") as f:
+        with open(path, "rb") as f:
             text = str(f.read())[2:-1]
     else:
         if encoding.get() == "auto":
-            with open(url, encoding=detect_encoding(url), errors="ignore" if ignore.get() else None) as f:
+            with open(path, encoding=detect_encoding(path), errors="ignore" if ignore.get() else None) as f:
                 try:
                     text = f.read()
-                    file_coding = f.encoding
+                    file_encoding = f.encoding
                 except UnicodeDecodeError:
                     tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.decoding.tips.error"])
                 except UnicodeError:
                     tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.decoding.tips.error"])
         else:
-            with open(url, encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
+            with open(path, encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
                 try:
                     text = f.read()
-                    file_coding = f.encoding
+                    file_encoding = f.encoding
                 except UnicodeDecodeError:
                     tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.decoding.tips.error"])
                 except UnicodeError:
                     tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.decoding.tips.error"])
-    file_url = url
-    window.title(lang["text.gui.title.fileopened"] + file_url)
+    file_path = path
+    window.title(lang["text.gui.title.fileopened"] + file_path)
     e.insert('end', text)
     e.edit_reset()
     plugin_object.run_plugins("after_open", globals(), locals())
 
 
 def save():
-    global file_url
-    global file_coding
+    global file_path
+    global file_encoding
     plugin_object.run_plugins("before_save", globals(), locals())
-    issave = False
-    if file_url == "":
+    if file_path == "":
         plugin_object.run_plugins("save_to_as", globals(), locals())
         return save_as()
     else:
         if isbin_mode.get():
-            with open(file_url, "wb") as f:
+            with open(file_path, "wb") as f:
                 try:
                     f.write(eval("b'" + e.get("0.0", "end")[:-1] + "'"))
-                    issave = True
                 except SyntaxError:
                     tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.encoding.tips.error"])
         else:
             if encoding.get() == "auto":
-                with open(file_url, "w", encoding=detect_encoding(file_url), errors="ignore" if ignore.get() else None) as f:
+                with open(file_path, "w", encoding=detect_encoding(file_path),
+                          errors="ignore" if ignore.get() else None) as f:
                     try:
                         f.write(e.get("0.0", "end")[:-1])
-                        issave = True
                     except UnicodeEncodeError:
                         tk.messagebox.showerror(lang["text.gui.msg.title.error"],
                                                 lang["text.gui.file.encoding.tips.error"])
             else:
-                with open(file_url, "w", encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
+                with open(file_path, "w", encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
                     try:
                         f.write(e.get("0.0", "end")[:-1])
-                        file_coding = f.encoding
-                        issave = True
+                        file_encoding = f.encoding
                     except UnicodeEncodeError:
                         tk.messagebox.showerror(lang["text.gui.msg.title.error"],
                                                 lang["text.gui.file.encoding.tips.error"])
         plugin_object.run_plugins("after_save", globals(), locals())
-        return issave
+        return issave()
 
 
 def save_as():
-    global file_url
-    global file_coding
+    global file_path
+    global file_encoding
     plugin_object.run_plugins("before_save_as", globals(), locals())
-    issave = False
-    url = tk.filedialog.asksaveasfilename(title=lang["text.gui.file.save_as.title"],
-                                          filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"),
+    path = tk.filedialog.asksaveasfilename(title=lang["text.gui.file.save_as.title"],
+                                           filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"),
                                                      (lang["text.gui.file.open.type.all"], ".*")])
     if isbin_mode.get():
-        with open(url, "wb") as f:
+        with open(path, "wb") as f:
             try:
                 f.write(eval("b'" + e.get("0.0", "end")[:-1] + "'"))
-                issave = True
             except SyntaxError:
                 tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.encoding.tips.error"])
     else:
         if encoding.get() == "auto":
-            with open(url, 'w', encoding=detect_encoding(url), errors="ignore" if ignore.get() else None) as f:
+            with open(path, 'w', encoding=detect_encoding(path), errors="ignore" if ignore.get() else None) as f:
                 try:
                     f.write(e.get("0.0", "end")[:-1])
-                    issave = True
                 except UnicodeEncodeError:
                     tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.encoding.tips.error"])
         else:
-            with open(url, 'w', encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
+            with open(path, 'w', encoding=encoding.get(), errors="ignore" if ignore.get() else None) as f:
                 try:
                     f.write(e.get("0.0", "end")[:-1])
-                    file_coding = f.encoding
-                    issave = True
+                    file_encoding = f.encoding
                 except UnicodeEncodeError:
                     tk.messagebox.showerror(lang["text.gui.msg.title.error"], lang["text.gui.file.encoding.tips.error"])
 
-    file_url = url
-    window.title(lang["text.gui.title.fileopened"] + file_url)
+    file_path = path
+    window.title(lang["text.gui.title.fileopened"] + file_path)
     plugin_object.run_plugins("after_save_as", globals(), locals())
-    return issave
+    return issave()
 
 
 @q
-def exit_window():
+def exit_window(apimode=False):
     plugin_object.run_plugins("exit", globals(), locals())
     write_config()
-    window.quit()
+    if not apimode:
+        window.quit()
+    return True
 
 
 def font_():
@@ -555,7 +555,7 @@ def replace_str():
         if sel_range:
             selectarea = sel_range[0].string, sel_range[1].string
             result = findnext('start')
-            if result is None:
+            if result == None:
                 return
             if result[0] == selectarea[0]:
                 e.mark_set('insert', result[1])
@@ -590,10 +590,10 @@ def replace_str():
         last = (0, 0)
         while True:
             result = replace_f(mark=False)
-            if result is None:
+            if result == None:
                 break
             result = findnext('start', mark=False)
-            if result is None:
+            if result == None:
                 return
             ln, col = result[0].split('.')
             ln = int(ln)
@@ -647,7 +647,7 @@ def get_size():
     if isbin_mode.get():
         size = len(eval("b'" + e.get("0.0", "end")[:-1] + "'"))
     else:
-        size = len(e.get("0.0", "end")[:-1].encode(file_coding))
+        size = len(e.get("0.0", "end")[:-1].encode(file_encoding))
     if size > (1024 * 1024):
         return "{:.2f}MB".format(size / 1024 / 1024)
     elif size > 1024:
@@ -659,8 +659,8 @@ def get_size():
 def bin_mode():
     isbin_mode.set(not isbin_mode.get())
     q(lambda: isbin_mode.set(not isbin_mode.get()))()
-    if file_url != "":
-        open_file(file_url)
+    if file_path != "":
+        open_file(file_path)
 
 
 def write_config(path=os.path.dirname(sys.argv[0])):
@@ -695,6 +695,26 @@ def read_config(path=os.path.dirname(sys.argv[0])):
         write_config()
 
 
+def topmost():
+    window.wm_attributes('-topmost', istopmost.get())
+
+
+def update_status_bar(event=""):
+    cr, cc = map(int, e.index("insert").split("."))
+    status_bar_var.set(
+        lang["text.gui.status_bar.text"].format(rows=cr, rows_total=len(e.get("0.0", "end").split("\n")) - 1,
+                                                columns=cc + 1,
+                                                columns_total=len(e.get("{}.0".format(cr),
+                                                                        "{}.0".format(cr + 1))) - 1,
+                                                chars=len(e.get('0.0', 'end')) - 1, file_size=get_size(),
+                                                encoding=file_encoding))
+
+
+def on_modify(event):
+    e.edit_separator()
+    update_status_bar()
+
+
 def rmdir(dir_path):
     if os.path.isfile(dir_path):
         try:
@@ -713,6 +733,8 @@ class Plugins:
         self.plugins_dir = plugins_dir
         self.config_file_name = config_file_name
         self.pubkey = pubkey
+        if not os.path.isdir(plugins_dir):
+            os.mkdir(plugins_dir)
 
     def is_signature(self, info):
         try:
@@ -918,7 +940,7 @@ class Plugins:
     def install_plugin(self, file):
         with zipfile.ZipFile(file) as f:
             corrupt_file = f.testzip()
-            if not (corrupt_file is None):
+            if not (corrupt_file == None):
                 tk.messagebox.showerror(lang["text.gui.msg.title.error"],
                                         lang["text.gui.menu.plugin.file.invalid"].format(corrupt_file))
                 return
@@ -997,31 +1019,42 @@ class TextPlus(tk.Text):
         return result
 
 
-def topmost():
-    window.wm_attributes('-topmost', istopmost.get())
+class TempSave:
+    def __init__(self, tempdir):
+        self.dir = tempdir
+        if not os.path.isdir(tempdir):
+            os.mkdir(tempdir)
+
+    def get_count(self):
+        return len(os.listdir(self.dir))
+
+    def save(self):
+        with open(os.path.join(self.dir, f"{window_hwnd}.json"), "w") as f:
+            json.dump({"encoding": file_encoding, "path": file_path, "content": e.get('0.0', 'end')[:-1]}, f)
+
+    def load(self):
+        global file_path
+        global file_encoding
+        files = os.listdir(self.dir)
+        if not files:
+            return
+        with open(os.path.join(self.dir, files[0])) as f:
+            tempfile = json.load(f)
+        os.remove(os.path.join(self.dir, files[0]))
+        file_path = tempfile["path"]
+        file_encoding = tempfile["encoding"]
+        e.delete('0.0', 'end')
+        e.insert('end', tempfile["content"])
+        e.edit_reset()
+        if len(files) > 1:
+            os.startfile(sys.argv[0])
 
 
-def update_status_bar(event=""):
-    cr, cc = map(int, e.index("insert").split("."))
-    status_bar_var.set(
-        lang["text.gui.status_bar.text"].format(rows=cr, rows_total=len(e.get("0.0", "end").split("\n")) - 1,
-                                                columns=cc + 1,
-                                                columns_total=len(e.get("{}.0".format(cr),
-                                                                        "{}.0".format(cr + 1))) - 1,
-                                                chars=len(e.get('0.0', 'end')) - 1, file_size=get_size(),
-                                                encoding=file_coding))
-
-
-def on_modify(event):
-    e.edit_separator()
-    update_status_bar()
-
-
-version = "4.4.1"
-update_date = "2024/6/9"
+version = "4.4.2"
+update_date = "2024/6/18"
 font = ("Microsoft YaHei UI", 10, "")
 encodings = ["GBK", "UTF-16", "BIG5", "shift_jis", "UTF-8"]
-file_coding = sys.getdefaultencoding()
+file_encoding = sys.getdefaultencoding()
 pubkey = """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAviKlXVbsyDDvqZSLLc3A
 UK86Wg/+dUMS/zneoyQoihnvtiZjcEpV7rOxW17DjZnfpgo1LkCr95LWXeqEEuJp
@@ -1032,6 +1065,7 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
 3QIDAQAB
 -----END PUBLIC KEY-----"""
 plugin_object = Plugins("plugins", "plugin.json", pubkey)
+tempsavefile_object = TempSave("tempsave")
 all_lang = {}
 for i in os.listdir(".\\lang"):
     if os.path.isfile(os.path.join(".\\lang", i)) and i.endswith(".lang"):
@@ -1055,7 +1089,7 @@ isunderline = tk.BooleanVar(value=False)
 isbin_mode = tk.BooleanVar(value=False)
 ignore = tk.BooleanVar(value=False)
 encoding = tk.StringVar(value="auto")
-file_url = ""
+file_path = ""
 plugins = []
 read_config()
 plugin_object.run_plugins("init", globals(), locals())
@@ -1068,6 +1102,8 @@ window.title(lang["text.gui.title"])
 window.geometry('400x500')
 window.minsize(300, 20)
 window.iconbitmap(lang["path.gui.ico"])
+# 获取窗口句柄
+window_hwnd = user32.GetParent(window.winfo_toplevel().winfo_id())
 
 # 文本框初始化
 f = tk.ttk.Frame(window, relief="groove", borderwidth=2)
@@ -1229,8 +1265,32 @@ e.event_add('<<CursorEvent>>', *('<KeyPress>', '<KeyRelease>', '<ButtonPress>', 
 e.bind('<<CursorEvent>>', update_status_bar)
 windnd.hook_dropfiles(e, func=drop(open_file))
 window.config(menu=menubar)
+
+WNDPROCTYPE = ctypes.WINFUNCTYPE(ctypes.c_long, wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
+
+
+# 新窗口处理器（防退出）
+def new_wndproc(hwnd, msg, wparam, lparam):
+    if msg == win32con.WM_CLOSE:
+        return exit_window(True)
+    elif msg == win32con.WM_QUERYENDSESSION:
+        return issave()
+    elif msg == win32con.WM_ENDSESSION:
+        if wparam:
+            tempsavefile_object.save()
+        return 0
+
+    return user32.CallWindowProcW(wndproc, hwnd, msg, wparam, lparam)
+
+
+wndproc = user32.SetWindowLongW(window_hwnd, -4, WNDPROCTYPE(new_wndproc))
+
 window.protocol('WM_DELETE_WINDOW', exit_window)
 plugin_object.run_plugins("main", globals(), locals())
 if len(sys.argv) > 1:
     open_file(sys.argv[1])
+    if tempsavefile_object.get_count() > 0:
+        os.startfile(sys.argv[0])
+else:
+    tempsavefile_object.load()
 window.mainloop()
