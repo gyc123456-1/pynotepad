@@ -124,7 +124,7 @@ def open_file(path=""):
     if not path:
         path = tk.filedialog.askopenfilename(title=lang["text.gui.file.open.title"],
                                              filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"),
-                                                       (lang["text.gui.file.open.type.all"], ".*")])
+                                                        (lang["text.gui.file.open.type.all"], ".*")])
     e.delete('0.0', 'end')
     file_path = ""
     text = ""
@@ -199,7 +199,7 @@ def save_as():
     plugin_object.run_plugins("before_save_as", globals(), locals())
     path = tk.filedialog.asksaveasfilename(title=lang["text.gui.file.save_as.title"],
                                            filetypes=[(lang["text.gui.file.open.type.txt"], ".txt"),
-                                                     (lang["text.gui.file.open.type.all"], ".*")])
+                                                      (lang["text.gui.file.open.type.all"], ".*")])
     if isbin_mode.get():
         with open(path, "wb") as f:
             try:
@@ -744,11 +744,12 @@ class Plugins:
                 digest.update(text.encode())
                 return verifier.verify(digest, base64.b64decode(sign))
 
-            a = False
+            a = True
             for i in info["files"]:
-                with open(os.path.join(self.plugins_dir, info["path"], i["file"])) as f:
+                with open(os.path.join(self.plugins_dir, info["path"], i["file"]),
+                          encoding=detect_encoding(os.path.join(self.plugins_dir, info["path"], i["file"]))) as f:
                     rdata = f.read()
-                a = rsa_public_check_sign(rdata, i["sign"], self.pubkey)
+                a = rsa_public_check_sign(rdata, i["sign"], self.pubkey) and a
             return a
         except Exception:
             return False
@@ -773,7 +774,7 @@ class Plugins:
                 for d in info["dependencies"]:
                     for i in os.listdir(self.plugins_dir):
                         if i in plugins and os.path.isdir(os.path.join(self.plugins_dir, i)):
-                            with open(os.path.join(self.plugins_dir, i, self.config_file_name), encoding="utf-8") as f:
+                            with open(os.path.join(self.plugins_dir, i, self.config_file_name), encoding=detect_encoding(os.path.join(self.plugins_dir, i, self.config_file_name))) as f:
                                 if d == json.load(f)["name"]:
                                     break
                     else:
@@ -787,7 +788,7 @@ class Plugins:
                         for j in info["files"]:
                             if j["position"] == "enable":
                                 try:
-                                    with open(os.path.join(self.plugins_dir, key, j["file"]), encoding="utf-8") as f:
+                                    with open(os.path.join(self.plugins_dir, key, j["file"]), encoding=detect_encoding(os.path.join(self.plugins_dir, key, j["file"]))) as f:
                                         if j["wait"]:
                                             exec(f.read(), globals(), locals())
                                         else:
@@ -804,7 +805,7 @@ class Plugins:
                     for j in info["files"]:
                         if j["position"] == "disable":
                             try:
-                                with open(os.path.join(self.plugins_dir, key, j["file"]), encoding="utf-8") as f:
+                                with open(os.path.join(self.plugins_dir, key, j["file"]), encoding=detect_encoding(os.path.join(self.plugins_dir, key, j["file"]))) as f:
                                     if j["wait"]:
                                         exec(f.read(), globals(), locals())
                                     else:
@@ -845,7 +846,7 @@ class Plugins:
                         if j["position"] == "delete":
                             try:
                                 with open(os.path.join(self.plugins_dir, info["path"], j["file"]),
-                                          encoding="utf-8") as f:
+                                          encoding=detect_encoding(os.path.join(self.plugins_dir, info["path"], j["file"]))) as f:
                                     if j["wait"]:
                                         exec(f.read(), globals(), locals())
                                     else:
@@ -882,7 +883,7 @@ class Plugins:
         pluginchoose = tk.Listbox(f_s, yscrollcommand=s1.set, width=30)
         for i in os.listdir(self.plugins_dir):
             if os.path.isdir(os.path.join(self.plugins_dir, i)):
-                with open(os.path.join(self.plugins_dir, i, self.config_file_name), encoding="utf-8") as f:
+                with open(os.path.join(self.plugins_dir, i, self.config_file_name), encoding=detect_encoding(os.path.join(self.plugins_dir, i, self.config_file_name))) as f:
                     info = json.load(f)
                     pluginlist[info["name"]] = info
                     pluginlist[info["name"]]["path"] = i
@@ -920,13 +921,13 @@ class Plugins:
     def run_plugins(self, position, g, l):
         for i in os.listdir(self.plugins_dir):
             if i in plugins and os.path.isdir(os.path.join(self.plugins_dir, i)):
-                with open(os.path.join(self.plugins_dir, i, self.config_file_name), encoding="utf-8") as f:
+                with open(os.path.join(self.plugins_dir, i, self.config_file_name), encoding=detect_encoding(os.path.join(self.plugins_dir, i, self.config_file_name))) as f:
                     info = json.load(f)
                     try:
                         for j in info["files"]:
                             if j["position"] == position:
                                 try:
-                                    with open(os.path.join(self.plugins_dir, i, j["file"]), encoding="utf-8") as f:
+                                    with open(os.path.join(self.plugins_dir, i, j["file"]), encoding=detect_encoding(os.path.join(self.plugins_dir, i, j["file"]))) as f:
                                         if j["wait"]:
                                             exec(f.read(), g, l)
                                         else:
@@ -955,7 +956,7 @@ class Plugins:
             f.extractall(tempdir)
             try:
                 if os.path.isfile(os.path.join(tempdir, plugin_dirname, self.config_file_name)):
-                    with open(os.path.join(tempdir, plugin_dirname, self.config_file_name), encoding="utf-8") as i:
+                    with open(os.path.join(tempdir, plugin_dirname, self.config_file_name), encoding=detect_encoding(os.path.join(tempdir, plugin_dirname, self.config_file_name))) as i:
                         info = json.load(i)
                     keys = ["name", "version", "description", "minsdk", "files", "dependencies"]
                     for i in keys:
@@ -976,7 +977,7 @@ class Plugins:
                         for j in info["files"]:
                             if j["position"] == "install":
                                 try:
-                                    with open(os.path.join(self.plugins_dir, key, j["file"]), encoding="utf-8") as f:
+                                    with open(os.path.join(self.plugins_dir, key, j["file"]), encoding=detect_encoding(os.path.join(self.plugins_dir, key, j["file"]))) as f:
                                         if j["wait"]:
                                             exec(f.read(), globals(), locals())
                                         else:
@@ -1050,8 +1051,8 @@ class TempSave:
             os.startfile(sys.argv[0])
 
 
-version = "4.4.2"
-update_date = "2024/6/18"
+version = "4.4.3"
+update_date = "2024/6/20"
 font = ("Microsoft YaHei UI", 10, "")
 encodings = ["GBK", "UTF-16", "BIG5", "shift_jis", "UTF-8"]
 file_encoding = sys.getdefaultencoding()
@@ -1067,17 +1068,20 @@ fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
 plugin_object = Plugins("plugins", "plugin.json", pubkey)
 tempsavefile_object = TempSave("tempsave")
 all_lang = {}
+user_lang = ""
 for i in os.listdir(".\\lang"):
     if os.path.isfile(os.path.join(".\\lang", i)) and i.endswith(".lang"):
         try:
-            with open(os.path.join(".\\lang", i), encoding="utf-8") as lang_file:
+            with open(os.path.join(".\\lang", i), encoding=detect_encoding(os.path.join(".\\lang", i))) as lang_file:
                 all_lang[i[:-5]] = json.load(lang_file)
         except Exception:
             pass
 try:
     lang = all_lang[locale.windows_locale[win32api.GetUserDefaultLangID()]]
+    user_lang = locale.windows_locale[win32api.GetUserDefaultLangID()]
 except KeyError:
     lang = {}
+    user_lang = "en_US" if "en_US" in list(all_lang.keys()) else list(all_lang.keys())[0]
 lang_raw = all_lang["en_US" if "en_US" in list(all_lang.keys()) else list(all_lang.keys())[0]]
 window = tk.Tk()
 window.tk.call('tk', 'scaling', ScaleFactor / 75)
