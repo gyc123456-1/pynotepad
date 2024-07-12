@@ -1,3 +1,4 @@
+import hashlib
 import json
 import threading
 import time
@@ -13,6 +14,7 @@ import win32print
 import tempfile
 import sys
 import re
+import requests
 import os
 import win32ui
 import windnd
@@ -24,40 +26,60 @@ import ctypes
 from ctypes import wintypes
 import locale
 import zipfile
+import typing
+import typing_extensions
 
-ctypes.windll.shcore.SetProcessDpiAwareness(1)
 user32 = ctypes.windll.user32
+kernel32 = ctypes.windll.kernel32
+ctypes.windll.shcore.SetProcessDpiAwareness(1)
 ScaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0)
+kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)  # 针对 Windows 老终端颜色代码的修复（可能用不上，先放这）
+# 类型注解用
+Path = typing.Union[str, typing_extensions.LiteralString]
+Info = typing.Dict[str, typing.Union[str, typing.List[typing.Union[str, typing.Dict[str, typing.Union[bool, str]]]]]]
 
 
-def q(func):
-    def wrapper(*args, **kwargs):
+def q(func: typing.Callable) -> typing.Callable[..., bool]:
+    """
+    装饰器，在被装饰的函数执行前会询问是否保存，函数已执行返回 True，反之为 False
+    :param func: 被装饰的函数
+    :return: 装饰后的函数
+    """
+
+    def wrapper(*args, **kwargs) -> bool:
         plugin_object.run_plugins("ask_save", globals(), locals())
         if issave():
             func(*args, **kwargs)
+            return True
         else:
             a = tk.messagebox.askyesnocancel(lang["text.gui.title"], lang["text.gui.file.exit_save"])
-            if a == None:
+            if a is None:
                 return False
             elif a:
                 if file_path == "":
-                    if save_as() == True:
+                    if save_as():
                         func(*args, **kwargs)
+                        return True
                     else:
                         return False
                 else:
-                    if save() == True:
+                    if save():
                         func(*args, **kwargs)
+                        return True
                     else:
                         return False
             else:
                 func(*args, **kwargs)
+                return True
 
     return wrapper
 
 
 @q
-def make_new():
+def make_new() -> None:
+    """
+    新建文件
+    """
     plugin_object.run_plugins("before_new", globals(), locals())
     e.delete('0.0', 'end')
     e.edit_reset()
@@ -66,8 +88,14 @@ def make_new():
     plugin_object.run_plugins("after_new", globals(), locals())
 
 
-def drop(func):
-    def warpper(files):
+def drop(func: typing.Callable[[str], typing.Any]) -> typing.Callable[[typing.Sequence[bytes]], None]:
+    """
+    装饰器，用来处理 windnd.hook_dropfiles 的拖放事件，将拖动的文件的第一个传递给被装饰的函数
+    :param func: 被装饰的函数
+    :return: 装饰后的函数
+    """
+
+    def warpper(files: typing.Sequence[bytes]) -> None:
         try:
             path = [i.decode() for i in files]
         except UnicodeDecodeError:
@@ -77,7 +105,13 @@ def drop(func):
     return warpper
 
 
-def detect_encoding(path):
+def detect_encoding(path: Path) -> str:
+    """
+    检测指定文件的编码
+    :param path: 文件路径
+    :return: 检测到时返回正确编码，否则返回 file_encoding
+    """
+    # noinspection PyBroadException
     try:
         with open(path, 'rb') as f:
             return chardet.detect(f.read())['encoding']
@@ -85,7 +119,11 @@ def detect_encoding(path):
         return file_encoding
 
 
-def issave():
+def issave() -> bool:
+    """
+    检测当前文件是否保存
+    :return: True 为已保存，False 为未保存
+    """
     plugin_object.run_plugins("is_save", globals(), locals())
     if file_path != "":
         if encoding.get() == "auto":
@@ -117,7 +155,11 @@ def issave():
 
 
 @q
-def open_file(path=""):
+def open_file(path: Path = "") -> None:
+    """
+    打开文件
+    :param path: 文件路径，为空时打开文件选择器
+    """
     global file_path
     global file_encoding
     plugin_object.run_plugins("before_open", globals(), locals())
@@ -158,7 +200,11 @@ def open_file(path=""):
     plugin_object.run_plugins("after_open", globals(), locals())
 
 
-def save():
+def save() -> bool:
+    """
+    保存文件
+    :return: 是否保存成功
+    """
     global file_path
     global file_encoding
     plugin_object.run_plugins("before_save", globals(), locals())
@@ -193,7 +239,11 @@ def save():
         return issave()
 
 
-def save_as():
+def save_as() -> bool:
+    """
+    另存为文件
+    :return: 是否保存成功
+    """
     global file_path
     global file_encoding
     plugin_object.run_plugins("before_save_as", globals(), locals())
@@ -228,15 +278,19 @@ def save_as():
 
 
 @q
-def exit_window(apimode=False):
+def exit_window() -> None:
+    """
+    关闭主窗口
+    """
     plugin_object.run_plugins("exit", globals(), locals())
     write_config()
-    if not apimode:
-        window.quit()
-    return True
+    window.quit()
 
 
-def font_():
+def font_() -> None:
+    """
+    将字体相关 tkinter 变量同步到 font 变量
+    """
     global font
     t = ""
     if isbold.get():
@@ -249,14 +303,23 @@ def font_():
     e.config(font=font)
 
 
-def wrap_():
+def wrap_() -> None:
+    """
+    将自动换行相关 tkinter 变量同步到 wrap 变量
+    """
     if iswrapmode.get():
         e.config(wrap=tk.WORD)
     else:
         e.config(wrap=tk.NONE)
 
 
-def compare_version_number(o_ver, n_ver):
+def compare_version_number(o_ver: str, n_ver: str) -> int:
+    """
+    比较版本号的大小
+    :param o_ver: 版本号 a
+    :param n_ver: 版本号 b
+    :return: -1为 a 大，0为相等，1为 b 大
+    """
     if o_ver == n_ver:
         return 0
     o_vers = o_ver.split(".")
@@ -309,7 +372,10 @@ def compare_version_number(o_ver, n_ver):
                         return 0
 
 
-def send_printer():
+def send_printer() -> None:
+    """
+    打印界面
+    """
     plugin_object.run_plugins("before_print_gui", globals(), locals())
     pt = tk.Toplevel()
     pt.geometry("250x80")
@@ -326,14 +392,14 @@ def send_printer():
     prcombo.pack()
     pt.transient(window)
 
-    def p():
+    def p() -> None:
         plugin_object.run_plugins("before_print_handler", globals(), locals())
 
-        def send_to_printer(text, font):
+        def send_to_printer(text: str, font: tuple) -> None:
             dc = win32ui.CreateDC()
             dc.CreatePrinterDC(prcombo.get())
 
-            def convert_font_format(font):
+            def convert_font_format(font: tuple) -> dict:
                 name, height, attributes = font
                 weight = 400
                 italic = False
@@ -369,7 +435,10 @@ def send_printer():
     plugin_object.run_plugins("after_print_gui", globals(), locals())
 
 
-def font_settings():
+def font_settings() -> None:
+    """
+    字体设置界面
+    """
     plugin_object.run_plugins("before_font_settings_gui", globals(), locals())
     setings = tk.Toplevel()
     setings.geometry("220x20")
@@ -411,7 +480,11 @@ def font_settings():
     plugin_object.run_plugins("after_font_settings_gui", globals(), locals())
 
 
-def find_str():
+def find_str() -> None:
+    """
+    查找界面
+    """
+
     # noinspection PyUnusedLocal
     def search(event=None, mark=True):
         key = keyword_text.get()
@@ -496,7 +569,12 @@ def find_str():
     options.pack(fill=tk.X)
 
 
-def replace_str():
+# noinspection PyTypeChecker
+def replace_str() -> None:
+    """
+    替换界面
+    """
+
     def search(event=None, mark=True):
         key = keyword_text.get()
         if not key:
@@ -555,7 +633,7 @@ def replace_str():
         if sel_range:
             selectarea = sel_range[0].string, sel_range[1].string
             result = findnext('start')
-            if result == None:
+            if result is None:
                 return
             if result[0] == selectarea[0]:
                 e.mark_set('insert', result[1])
@@ -590,10 +668,10 @@ def replace_str():
         last = (0, 0)
         while True:
             result = replace_f(mark=False)
-            if result == None:
+            if result is None:
                 break
             result = findnext('start', mark=False)
-            if result == None:
+            if result is None:
                 return
             ln, col = result[0].split('.')
             ln = int(ln)
@@ -643,7 +721,11 @@ def replace_str():
     options.pack(fill=tk.X)
 
 
-def get_size():
+def get_size() -> str:
+    """
+    获取文件大小
+    :return: 带单位大小
+    """
     if isbin_mode.get():
         size = len(eval("b'" + e.get("0.0", "end")[:-1] + "'"))
     else:
@@ -656,14 +738,21 @@ def get_size():
         return "{}B".format(size)
 
 
-def bin_mode():
+def bin_mode() -> None:
+    """
+    切换二进制模式
+    """
     isbin_mode.set(not isbin_mode.get())
     q(lambda: isbin_mode.set(not isbin_mode.get()))()
     if file_path != "":
         open_file(file_path)
 
 
-def write_config(path=os.path.dirname(sys.argv[0])):
+def write_config(path: Path = os.path.dirname(sys.argv[0])) -> None:
+    """
+    保存配置文件
+    :param path: 存放配置文件的文件夹的路径
+    """
     with open(os.path.join(path, "config.ini"), "w") as f:
         json.dump({"font": font,
                    "wrap": iswrapmode.get(),
@@ -674,7 +763,11 @@ def write_config(path=os.path.dirname(sys.argv[0])):
                    "plugins": plugins}, f)
 
 
-def read_config(path=os.path.dirname(sys.argv[0])):
+def read_config(path: Path = os.path.dirname(sys.argv[0])) -> None:
+    """
+    读取配置文件
+    :param path: 存放配置文件的文件夹的路径
+    """
     global font
     global plugins
     if os.path.isfile(os.path.join(path, "config.ini")):
@@ -687,7 +780,7 @@ def read_config(path=os.path.dirname(sys.argv[0])):
         isunderline.set(config["underline"])
         ignore.set(config["ignore"])
         plugins = config["plugins"]
-        if type(plugins) != list:
+        if not isinstance(plugins, list):
             plugins = []
     else:
         if not os.path.isdir(path):
@@ -695,11 +788,17 @@ def read_config(path=os.path.dirname(sys.argv[0])):
         write_config()
 
 
-def topmost():
+def topmost() -> None:
+    """
+    同步置顶变量与窗口置顶状态
+    """
     window.wm_attributes('-topmost', istopmost.get())
 
 
-def update_status_bar(event=""):
+def update_status_bar(event: typing.Union[tk.Event, str] = "") -> None:
+    """
+    刷新状态栏
+    """
     cr, cc = map(int, e.index("insert").split("."))
     status_bar_var.set(
         lang["text.gui.status_bar.text"].format(rows=cr, rows_total=len(e.get("0.0", "end").split("\n")) - 1,
@@ -710,17 +809,24 @@ def update_status_bar(event=""):
                                                 encoding=file_encoding))
 
 
-def on_modify(event):
+def on_modify(event: tk.Event) -> None:
+    """
+    文本框修改时的处理函数
+    """
     e.edit_separator()
     update_status_bar()
 
 
-def rmdir(dir_path):
+def rmdir(dir_path: Path) -> None:
+    """
+    递归删除文件夹（夹）
+    :param dir_path: 要删除的文件（夹）
+    """
     if os.path.isfile(dir_path):
         try:
             os.remove(dir_path)
         except Exception as e:
-            print(e)
+            tk.messagebox.showerror(lang["text.gui.msg.title.error"], str(e))
     elif os.path.isdir(dir_path):
         file_list = os.listdir(dir_path)
         for file_name in file_list:
@@ -729,32 +835,51 @@ def rmdir(dir_path):
 
 
 class Plugins:
-    def __init__(self, plugins_dir, config_file_name, pubkey):
+    """
+    插件类，包含相关界面及处理
+    """
+
+    def __init__(self: typing_extensions.Self, plugins_dir: str, config_file_name: str, pubkey: str) -> None:
+        """
+        初始化插件类
+        :param plugins_dir: 插件目录名
+        :param config_file_name: 插件配置文件名
+        :param pubkey: 插件验证公钥
+        """
         self.plugins_dir = plugins_dir
         self.config_file_name = config_file_name
         self.pubkey = pubkey
         if not os.path.isdir(plugins_dir):
             os.mkdir(plugins_dir)
 
-    def is_signature(self, info):
+    def is_signature(self: typing_extensions.Self, info: Info) -> bool:
+        """
+        判断是否签名是否有效
+        :param info: 反序列号后的插件配置文件
+        :return: True 为有效，False 为无效
+        """
         try:
+            # noinspection PyUnresolvedReferences
             def rsa_public_check_sign(text, sign, key):
                 verifier = PKCS1_signature.new(RSA.importKey(key))
                 digest = SHA.new()
                 digest.update(text.encode())
                 return verifier.verify(digest, base64.b64decode(sign))
 
-            a = True
-            for i in info["files"]:
-                with open(os.path.join(self.plugins_dir, info["path"], i["file"]),
-                          encoding=detect_encoding(os.path.join(self.plugins_dir, info["path"], i["file"]))) as f:
-                    rdata = f.read()
-                a = rsa_public_check_sign(rdata, i["sign"], self.pubkey) and a
-            return a
+            def check_files():
+                for i in info["files"]:
+                    with open(os.path.join(self.plugins_dir, info["path"], i["file"]),
+                              encoding=detect_encoding(os.path.join(self.plugins_dir, info["path"], i["file"]))) as f:
+                        yield rsa_public_check_sign(f.read(), i["sign"], self.pubkey)
+
+            return all(check_files())
         except Exception:
             return False
 
-    def plugin(self):
+    def plugin(self: typing_extensions.Self) -> None:
+        """
+        插件配置界面
+        """
         pluginwindow = tk.Toplevel()
         pluginwindow.title(lang["text.gui.menu.plugin.title"])
         pluginwindow.resizable(False, False)
@@ -774,7 +899,9 @@ class Plugins:
                 for d in info["dependencies"]:
                     for i in os.listdir(self.plugins_dir):
                         if i in plugins and os.path.isdir(os.path.join(self.plugins_dir, i)):
-                            with open(os.path.join(self.plugins_dir, i, self.config_file_name), encoding=detect_encoding(os.path.join(self.plugins_dir, i, self.config_file_name))) as f:
+                            with open(os.path.join(self.plugins_dir, i, self.config_file_name),
+                                      encoding=detect_encoding(
+                                          os.path.join(self.plugins_dir, i, self.config_file_name))) as f:
                                 if d == json.load(f)["name"]:
                                     break
                     else:
@@ -788,7 +915,8 @@ class Plugins:
                         for j in info["files"]:
                             if j["position"] == "enable":
                                 try:
-                                    with open(os.path.join(self.plugins_dir, key, j["file"]), encoding=detect_encoding(os.path.join(self.plugins_dir, key, j["file"]))) as f:
+                                    with open(os.path.join(self.plugins_dir, key, j["file"]), encoding=detect_encoding(
+                                            os.path.join(self.plugins_dir, key, j["file"]))) as f:
                                         if j["wait"]:
                                             exec(f.read(), globals(), locals())
                                         else:
@@ -805,7 +933,8 @@ class Plugins:
                     for j in info["files"]:
                         if j["position"] == "disable":
                             try:
-                                with open(os.path.join(self.plugins_dir, key, j["file"]), encoding=detect_encoding(os.path.join(self.plugins_dir, key, j["file"]))) as f:
+                                with open(os.path.join(self.plugins_dir, key, j["file"]), encoding=detect_encoding(
+                                        os.path.join(self.plugins_dir, key, j["file"]))) as f:
                                     if j["wait"]:
                                         exec(f.read(), globals(), locals())
                                     else:
@@ -846,7 +975,8 @@ class Plugins:
                         if j["position"] == "delete":
                             try:
                                 with open(os.path.join(self.plugins_dir, info["path"], j["file"]),
-                                          encoding=detect_encoding(os.path.join(self.plugins_dir, info["path"], j["file"]))) as f:
+                                          encoding=detect_encoding(
+                                              os.path.join(self.plugins_dir, info["path"], j["file"]))) as f:
                                     if j["wait"]:
                                         exec(f.read(), globals(), locals())
                                     else:
@@ -857,19 +987,8 @@ class Plugins:
                 except Exception as err:
                     tk.messagebox.showerror(info["name"], str(err))
 
-                def rmdir(dir_path):
-                    if os.path.isfile(dir_path):
-                        try:
-                            os.remove(dir_path)
-                        except Exception as e:
-                            print(e)
-                    elif os.path.isdir(dir_path):
-                        file_list = os.listdir(dir_path)
-                        for file_name in file_list:
-                            rmdir(os.path.join(dir_path, file_name))
-                        os.rmdir(dir_path)
-
                 rmdir(os.path.join(self.plugins_dir, info["path"]))
+                # noinspection PyBroadException
                 try:
                     del pluginlist[info["name"]]
                     plugins.remove(info["path"])
@@ -883,7 +1002,8 @@ class Plugins:
         pluginchoose = tk.Listbox(f_s, yscrollcommand=s1.set, width=30)
         for i in os.listdir(self.plugins_dir):
             if os.path.isdir(os.path.join(self.plugins_dir, i)):
-                with open(os.path.join(self.plugins_dir, i, self.config_file_name), encoding=detect_encoding(os.path.join(self.plugins_dir, i, self.config_file_name))) as f:
+                with open(os.path.join(self.plugins_dir, i, self.config_file_name),
+                          encoding=detect_encoding(os.path.join(self.plugins_dir, i, self.config_file_name))) as f:
                     info = json.load(f)
                     pluginlist[info["name"]] = info
                     pluginlist[info["name"]]["path"] = i
@@ -893,7 +1013,7 @@ class Plugins:
         f_s.pack(side=tk.LEFT, fill=tk.BOTH)
         s1.pack(side=tk.RIGHT, fill=tk.BOTH)
         s1.config(command=pluginchoose.yview)
-        install_button = tk.ttk.Button(f_s, text=lang["text.gui.menu.plugin.install"], command=install).pack()
+        tk.ttk.Button(f_s, text=lang["text.gui.menu.plugin.install"], command=install).pack()
         pluginchoose.pack(side=tk.LEFT, fill=tk.BOTH)
         f1 = tk.Frame(pluginwindow)
         pluginname = tk.ttk.Label(f1, font=("Microsoft YaHei UI", 15, "bold"))
@@ -902,7 +1022,7 @@ class Plugins:
         pluginversion.pack()
         enable_button = tk.ttk.Button(f1, text=lang["text.gui.menu.plugin.enable"], command=enable)
         enable_button.pack()
-        delete_button = tk.ttk.Button(f1, text=lang["text.gui.menu.plugin.delete"], command=delete).pack()
+        tk.ttk.Button(f1, text=lang["text.gui.menu.plugin.delete"], command=delete).pack()
         tk.ttk.Label(f1, text=lang["text.gui.menu.plugin.restart_tip"]).pack()
         f2 = tk.Frame(f1)
         s2 = tk.ttk.Scrollbar(f2, orient=tk.VERTICAL)
@@ -918,30 +1038,43 @@ class Plugins:
         pluginchoose.bind("<<ListboxSelect>>", show_info)
         windnd.hook_dropfiles(pluginchoose, func=drop(install))
 
-    def run_plugins(self, position, g, l):
+    def run_plugins(self: typing_extensions.Self, position: str, globals_: dict, locals_: dict) -> None:
+        """
+        在当前位置运行插件（注：有局部变量修改问题，将在未来解决）
+        :param position: 插件的运行时机
+        :param globals_: globals()执行结果
+        :param locals_: locals()执行结果
+        吐槽：最后两个参数完全没必要
+        """
         for i in os.listdir(self.plugins_dir):
             if i in plugins and os.path.isdir(os.path.join(self.plugins_dir, i)):
-                with open(os.path.join(self.plugins_dir, i, self.config_file_name), encoding=detect_encoding(os.path.join(self.plugins_dir, i, self.config_file_name))) as f:
+                with open(os.path.join(self.plugins_dir, i, self.config_file_name),
+                          encoding=detect_encoding(os.path.join(self.plugins_dir, i, self.config_file_name))) as f:
                     info = json.load(f)
-                    try:
-                        for j in info["files"]:
-                            if j["position"] == position:
-                                try:
-                                    with open(os.path.join(self.plugins_dir, i, j["file"]), encoding=detect_encoding(os.path.join(self.plugins_dir, i, j["file"]))) as f:
-                                        if j["wait"]:
-                                            exec(f.read(), g, l)
-                                        else:
-                                            threading.Thread(name=info["name"], target=exec,
-                                                             args=(f.read(), g, l)).start()
-                                except FileNotFoundError:
-                                    pass
-                    except Exception as err:
-                        tk.messagebox.showerror(info["name"], str(err))
+                try:
+                    for j in info["files"]:
+                        if j["position"] == position:
+                            try:
+                                with open(os.path.join(self.plugins_dir, i, j["file"]), encoding=detect_encoding(
+                                        os.path.join(self.plugins_dir, i, j["file"]))) as f:
+                                    if j["wait"]:
+                                        exec(f.read(), globals_, locals_)
+                                    else:
+                                        threading.Thread(name=info["name"], target=exec,
+                                                         args=(f.read(), globals_, locals_)).start()
+                            except FileNotFoundError:
+                                pass
+                except Exception as err:
+                    tk.messagebox.showerror(info["name"], str(err))
 
-    def install_plugin(self, file):
+    def install_plugin(self: typing_extensions.Self, file: Path) -> None:
+        """
+        安装插件
+        :param file: 要安装的插件名
+        """
         with zipfile.ZipFile(file) as f:
             corrupt_file = f.testzip()
-            if not (corrupt_file == None):
+            if not (corrupt_file is None):
                 tk.messagebox.showerror(lang["text.gui.msg.title.error"],
                                         lang["text.gui.menu.plugin.file.invalid"].format(corrupt_file))
                 return
@@ -956,7 +1089,8 @@ class Plugins:
             f.extractall(tempdir)
             try:
                 if os.path.isfile(os.path.join(tempdir, plugin_dirname, self.config_file_name)):
-                    with open(os.path.join(tempdir, plugin_dirname, self.config_file_name), encoding=detect_encoding(os.path.join(tempdir, plugin_dirname, self.config_file_name))) as i:
+                    with open(os.path.join(tempdir, plugin_dirname, self.config_file_name), encoding=detect_encoding(
+                            os.path.join(tempdir, plugin_dirname, self.config_file_name))) as i:
                         info = json.load(i)
                     keys = ["name", "version", "description", "minsdk", "files", "dependencies"]
                     for i in keys:
@@ -977,12 +1111,13 @@ class Plugins:
                         for j in info["files"]:
                             if j["position"] == "install":
                                 try:
-                                    with open(os.path.join(self.plugins_dir, key, j["file"]), encoding=detect_encoding(os.path.join(self.plugins_dir, key, j["file"]))) as f:
+                                    with open(os.path.join(self.plugins_dir, key, j["file"]), encoding=detect_encoding(
+                                            os.path.join(self.plugins_dir, key, j["file"]))) as f2:
                                         if j["wait"]:
-                                            exec(f.read(), globals(), locals())
+                                            exec(f2.read(), globals(), locals())
                                         else:
                                             threading.Thread(name=info["name"], target=exec,
-                                                             args=(f.read(), globals(), locals())).start()
+                                                             args=(f2.read(), globals(), locals())).start()
                                 except FileNotFoundError:
                                     pass
                     except Exception as err:
@@ -993,7 +1128,7 @@ class Plugins:
                                             lang["text.gui.menu.plugin.plugin.invalid"])
                     return
             except Exception as e:
-                tk.messagebox.showerror(lang["text.gui.msg.title.error"], e)
+                tk.messagebox.showerror(lang["text.gui.msg.title.error"], str(e))
             else:
                 tk.messagebox.showinfo(lang["text.gui.menu.plugin.install.finish.title"],
                                        lang["text.gui.menu.plugin.install.finish"])
@@ -1001,7 +1136,135 @@ class Plugins:
             rmdir(tempdir)
 
 
+class PluginMarket:
+    """
+    插件市场相关类，未经测试，未启用
+    """
+
+    def __init__(self: typing_extensions.Self, obj: Plugins, repo: str) -> None:
+        """
+        初始化插件市场类
+        :param obj: 插件对象
+        :param repo: 市场仓库 URL
+        """
+        self.obj = obj
+        self.repo = repo
+
+    def getlist(self: typing_extensions.Self) -> typing.List[dict]:
+        """
+        获取市场列表
+        :return: 插件信息列表
+        """
+        return json.loads(requests.get(f"{self.repo}/list.json").text)
+
+    def gui(self: typing_extensions.Self) -> None:
+        """
+        插件市场界面
+        """
+        pluginwindow = tk.Toplevel()
+        pluginwindow.title("插件市场")
+        pluginwindow.resizable(False, False)
+        pluginwindow.iconbitmap(lang["path.gui.ico"])
+        pluginwindow.transient(window)
+        pluginwindow.geometry("700x350")
+
+        def reload():
+            pluginwindow.destroy()
+            self.gui()
+
+        def show_info(e=None):
+            info = pluginlist[pluginchoose.selection_get()]
+            pluginname.config(text=info["name"])
+            pluginversion.config(text=lang["text.gui.menu.plugin.version_tip"] + info["version"])
+            pluginauthor.config(text="作者：" + info["author"])
+            if info["name"] in plugins:
+                install_button.config(text="已安装", state='disabled')
+            else:
+                install_button.config(text="安装", state='active')
+            e_.config(state='normal')
+            e_.delete("0.0", "end")
+            e_.insert("end", info["description"])
+            e_.config(state='disabled')
+
+        def download():
+            pluginchoose.config(state='disabled')
+            info = pluginlist[pluginchoose.selection_get()]
+            install_button.config(text="安装中...", state='disabled')
+            tempdir = os.path.join(tempfile.gettempdir(), "pynotepad", "market")
+            try:
+                os.makedirs(tempdir)
+            except FileExistsError:
+                rmdir(tempdir)
+                os.makedirs(tempdir)
+            head = requests.head(info["download"])
+            url = head.headers.get("Location")
+            head = requests.head(url)
+            file_size = int(head.headers.get("Content-Length"))
+            filename = head.headers.get("Content-Disposition")[21:]
+            response = requests.get(url, stream=True)
+            read = 0
+            with open(os.path.join(tempdir, filename), "wb") as f:
+                for chunk in response.iter_content(chunk_size=32767):
+                    read += 32767
+                    f.write(chunk)
+                    progressbar["value"] = read / file_size * 100
+                    pluginwindow.update()
+            md5 = base64.b64decode(head.headers.get("Content-MD5")).hex()
+            md5_hash = hashlib.md5()
+            with open(os.path.join(tempdir, filename), "rb") as f:
+                for byte_block in iter(lambda: f.read(4096), b""):
+                    md5_hash.update(byte_block)
+            if md5_hash.hexdigest() == md5:
+                self.obj.install_plugin(os.path.join(tempdir, filename))
+            else:
+                tk.messagebox.showerror("插件市场", "下载失败，请重试！")
+            rmdir(tempdir)
+            progressbar["value"] = 0
+
+        f_s = tk.Frame(pluginwindow)
+        s1 = tk.ttk.Scrollbar(f_s, orient=tk.VERTICAL)
+        pluginchoose = tk.Listbox(f_s, yscrollcommand=s1.set, width=30)
+        if pluginchoose.size() > 0:
+            pluginchoose.delete(0, pluginchoose.size())
+        pluginlist = self.getlist()
+        [pluginchoose.insert("end", j["name"]) for j in pluginlist]
+        f_s.pack(side=tk.LEFT, fill=tk.BOTH)
+        s1.pack(side=tk.RIGHT, fill=tk.BOTH)
+        s1.config(command=pluginchoose.yview)
+        tk.ttk.Button(f_s, text="刷新", command=reload).pack()
+        pluginchoose.pack(side=tk.LEFT, fill=tk.BOTH)
+        f1 = tk.Frame(pluginwindow)
+        pluginname = tk.ttk.Label(f1, font=("Microsoft YaHei UI", 15, "bold"))
+        pluginversion = tk.ttk.Label(f1, font=("Microsoft YaHei UI", 10))
+        pluginauthor = tk.ttk.Label(f1, font=("Microsoft YaHei UI", 10))
+        pluginname.pack()
+        pluginversion.pack()
+        pluginauthor.pack()
+        install_button = tk.ttk.Button(f1, text="安装", command=download)
+        install_button.pack()
+        f2 = tk.Frame(f1)
+        s2 = tk.ttk.Scrollbar(f2, orient=tk.VERTICAL)
+        e_ = tk.Text(f2, yscrollcommand=s2.set, font=("Microsoft YaHei UI", 10))
+        s2.pack(side=tk.RIGHT, fill=tk.BOTH)
+        s2.config(command=e_.yview)
+        f2.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES)
+        e_.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES)
+        progressbar = tk.ttk.Progressbar(pluginwindow)
+        progressbar.pack(side=tk.TOP, fill="both")
+        progressbar["maximum"] = 100
+        progressbar["value"] = 0
+        if len(pluginlist) > 0:
+            pluginchoose.selection_set(0)
+            show_info()
+            f1.pack()
+        pluginchoose.bind("<<ListboxSelect>>", show_info)
+
+
 class TextPlus(tk.Text):
+    """
+    定制版文本框类
+    """
+
     def __init__(self, *args, **kwargs):
         tk.Text.__init__(self, *args, **kwargs)
         self._orig = self._w + '_orig'
@@ -1021,19 +1284,37 @@ class TextPlus(tk.Text):
 
 
 class TempSave:
-    def __init__(self, tempdir):
+    """
+    临时保存类
+    """
+
+    def __init__(self: typing_extensions.Self, tempdir: Path) -> None:
+        """
+        初始化临时保存类
+        :param tempdir: 临时保存目录
+        """
         self.dir = tempdir
         if not os.path.isdir(tempdir):
             os.mkdir(tempdir)
 
-    def get_count(self):
+    def get_count(self: typing_extensions.Self) -> int:
+        """
+        获取临时保存文件数
+        :return: 临时文件数
+        """
         return len(os.listdir(self.dir))
 
-    def save(self):
+    def save(self: typing_extensions.Self) -> None:
+        """
+        临时保存当前文件
+        """
         with open(os.path.join(self.dir, f"{window_hwnd}.json"), "w") as f:
             json.dump({"encoding": file_encoding, "path": file_path, "content": e.get('0.0', 'end')[:-1]}, f)
 
-    def load(self):
+    def load(self: typing_extensions.Self) -> None:
+        """
+        加载一个临时保存的文件，如有多个，将新建进程加载
+        """
         global file_path
         global file_encoding
         files = os.listdir(self.dir)
@@ -1051,12 +1332,12 @@ class TempSave:
             os.startfile(sys.argv[0])
 
 
-version = "4.4.3"
-update_date = "2024/6/20"
-font = ("Microsoft YaHei UI", 10, "")
-encodings = ["GBK", "UTF-16", "BIG5", "shift_jis", "UTF-8"]
-file_encoding = sys.getdefaultencoding()
-pubkey = """-----BEGIN PUBLIC KEY-----
+version: str = "4.4.3"
+update_date: str = "2024/6/20"
+font: typing.Tuple[str, int, str] = ("Microsoft YaHei UI", 10, "")
+encodings: typing.List[str] = ["GBK", "UTF-16", "BIG5", "shift_jis", "UTF-8"]
+file_encoding: str = sys.getdefaultencoding()
+pubkey: str = """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAviKlXVbsyDDvqZSLLc3A
 UK86Wg/+dUMS/zneoyQoihnvtiZjcEpV7rOxW17DjZnfpgo1LkCr95LWXeqEEuJp
 N4Q9BtNR21GeFgH56+2G1dFefDSZpghZJMtqKi2N6cLDw11RShFKrz3VLO/j6tdv
@@ -1065,57 +1346,61 @@ o/ZNM9K23+hmrOg5Gy9ilpNDgR4THyk9oCGs3m+T9FTu+8NtlQX8/CkT5I+/kMTY
 fc3BnF8vjyV7vb3mKI2RPdRkLgYOEyWPDEwLteiVmA5ZFqdesPYBVpQ2RgnOXvhT
 3QIDAQAB
 -----END PUBLIC KEY-----"""
-plugin_object = Plugins("plugins", "plugin.json", pubkey)
-tempsavefile_object = TempSave("tempsave")
-all_lang = {}
-user_lang = ""
+plugin_object: Plugins = Plugins("plugins", "plugin.json", pubkey)
+tempsavefile_object: TempSave = TempSave("tempsave")
+all_lang: dict = {}
+user_lang: str = ""
 for i in os.listdir(".\\lang"):
     if os.path.isfile(os.path.join(".\\lang", i)) and i.endswith(".lang"):
+        # noinspection PyBroadException
         try:
             with open(os.path.join(".\\lang", i), encoding=detect_encoding(os.path.join(".\\lang", i))) as lang_file:
                 all_lang[i[:-5]] = json.load(lang_file)
         except Exception:
             pass
 try:
-    lang = all_lang[locale.windows_locale[win32api.GetUserDefaultLangID()]]
+    # noinspection PyUnresolvedReferences
+    lang: dict = all_lang[locale.windows_locale[win32api.GetUserDefaultLangID()]]
+    # noinspection PyUnresolvedReferences
     user_lang = locale.windows_locale[win32api.GetUserDefaultLangID()]
 except KeyError:
-    lang = {}
+    lang: dict = {}
     user_lang = "en_US" if "en_US" in list(all_lang.keys()) else list(all_lang.keys())[0]
-lang_raw = all_lang["en_US" if "en_US" in list(all_lang.keys()) else list(all_lang.keys())[0]]
-window = tk.Tk()
+lang_raw: dict = all_lang["en_US" if "en_US" in list(all_lang.keys()) else list(all_lang.keys())[0]]
+window: tk.Tk = tk.Tk()
 window.tk.call('tk', 'scaling', ScaleFactor / 75)
-istopmost = tk.BooleanVar(value=False)
-iswrapmode = tk.BooleanVar(value=False)
-isbold = tk.BooleanVar(value=False)
-isitalic = tk.BooleanVar(value=False)
-isunderline = tk.BooleanVar(value=False)
-isbin_mode = tk.BooleanVar(value=False)
-ignore = tk.BooleanVar(value=False)
-encoding = tk.StringVar(value="auto")
-file_path = ""
-plugins = []
+istopmost: tk.BooleanVar = tk.BooleanVar(value=False)
+iswrapmode: tk.BooleanVar = tk.BooleanVar(value=False)
+isbold: tk.BooleanVar = tk.BooleanVar(value=False)
+isitalic: tk.BooleanVar = tk.BooleanVar(value=False)
+isunderline: tk.BooleanVar = tk.BooleanVar(value=False)
+isbin_mode: tk.BooleanVar = tk.BooleanVar(value=False)
+ignore: tk.BooleanVar = tk.BooleanVar(value=False)
+encoding: tk.StringVar = tk.StringVar(value="auto")
+file_path: Path = ""
+plugins: typing.List[str] = []
 read_config()
 plugin_object.run_plugins("init", globals(), locals())
 for key in (lang_raw.keys() - lang.keys()):
     lang[key] = lang_raw[key]
-fontname = tk.StringVar(value=font[0])
-fontsize = tk.IntVar(value=font[1])
+fontname: tk.StringVar = tk.StringVar(value=font[0])
+fontsize: tk.IntVar = tk.IntVar(value=font[1])
 
 window.title(lang["text.gui.title"])
 window.geometry('400x500')
 window.minsize(300, 20)
 window.iconbitmap(lang["path.gui.ico"])
 # 获取窗口句柄
-window_hwnd = user32.GetParent(window.winfo_toplevel().winfo_id())
+window_hwnd: int = user32.GetParent(window.winfo_toplevel().winfo_id())
 
 # 文本框初始化
-f = tk.ttk.Frame(window, relief="groove", borderwidth=2)
+f: tk.ttk.Frame = tk.ttk.Frame(window, relief="groove", borderwidth=2)
 # 滚动条
-s1 = tk.ttk.Scrollbar(f, orient=tk.VERTICAL)
-s2 = tk.ttk.Scrollbar(f, orient=tk.HORIZONTAL)
+s1: tk.ttk.Scrollbar = tk.ttk.Scrollbar(f, orient=tk.VERTICAL)
+s2: tk.ttk.Scrollbar = tk.ttk.Scrollbar(f, orient=tk.HORIZONTAL)
 # 文本框
-e = TextPlus(f, wrap=tk.NONE, yscrollcommand=s1.set, xscrollcommand=s2.set, font=font, undo=True, relief="flat")
+e: TextPlus = TextPlus(f, wrap=tk.NONE, yscrollcommand=s1.set, xscrollcommand=s2.set, font=font, undo=True,
+                       relief="flat")
 s1.pack(side=tk.RIGHT, fill=tk.BOTH)
 s1.config(command=e.yview)
 s2.pack(side=tk.BOTTOM, fill=tk.BOTH)
@@ -1126,9 +1411,8 @@ e.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES)
 e.focus()
 
 # 菜单栏初始化
-menubar = tk.Menu(window)
-filemenu = tk.Menu(menubar, tearoff=0)
-menubar.add_cascade(label=lang["text.gui.menu.file"][0], menu=filemenu, underline=lang["text.gui.menu.file"][1])
+menubar: tk.Menu = tk.Menu(window)
+filemenu: tk.Menu = tk.Menu(menubar, tearoff=0)
 filemenu.add_command(label=lang["text.gui.menu.file.new"][0], command=make_new,
                      underline=lang["text.gui.menu.file.new"][1], accelerator="Ctrl+N")
 filemenu.add_command(label=lang["text.gui.menu.file.open"][0], command=open_file,
@@ -1147,7 +1431,8 @@ filemenu.add_command(label=lang["text.gui.menu.file.plugins"][0], command=plugin
 filemenu.add_separator()
 filemenu.add_command(label=lang["text.gui.menu.file.exit"][0], command=exit_window,
                      underline=lang["text.gui.menu.file.exit"][1])
-editmenu = tk.Menu(menubar, tearoff=0)
+menubar.add_cascade(label=lang["text.gui.menu.file"][0], menu=filemenu, underline=lang["text.gui.menu.file"][1])
+editmenu: tk.Menu = tk.Menu(menubar, tearoff=0)
 editmenu.add_command(label=lang["text.gui.menu.edit.undo"][0], command=lambda: e.edit_undo(),
                      underline=lang["text.gui.menu.edit.undo"][1],
                      accelerator="Ctrl+Z")
@@ -1175,7 +1460,7 @@ editmenu.add_command(label=lang["text.gui.menu.edit.replace"][0], command=lambda
                      underline=lang["text.gui.menu.edit.replace"][1],
                      accelerator="Ctrl+H")
 menubar.add_cascade(label=lang["text.gui.menu.edit"][0], menu=editmenu, underline=lang["text.gui.menu.edit"][1])
-contextmenu = tk.Menu(window, tearoff=0)
+contextmenu: tk.Menu = tk.Menu(window, tearoff=0)
 contextmenu.add_command(label=lang["text.gui.menu.edit.undo"][0], command=lambda: e.edit_undo(),
                         underline=lang["text.gui.menu.edit.undo"][1],
                         accelerator="Ctrl+Z")
@@ -1195,7 +1480,7 @@ contextmenu.add_command(label=lang["text.gui.menu.edit.delete"][0], command=lamb
                         underline=lang["text.gui.menu.edit.delete"][1], accelerator="Del")
 contextmenu.add_command(label=lang["text.gui.menu.edit.select_all"][0], command=lambda: e.tag_add("sel", "0.0", "end"),
                         underline=lang["text.gui.menu.edit.select_all"][1], accelerator="Ctrl+A")
-viewmenu = tk.Menu(menubar, tearoff=0)
+viewmenu: tk.Menu = tk.Menu(menubar, tearoff=0)
 viewmenu.add_command(label=lang["text.gui.menu.view.font"][0], command=font_settings,
                      underline=lang["text.gui.menu.view.font"][1])
 viewmenu.add_separator()
@@ -1205,7 +1490,7 @@ viewmenu.add_separator()
 viewmenu.add_checkbutton(label=lang["text.gui.menu.view.topmost"][0], underline=lang["text.gui.menu.view.topmost"][1],
                          command=topmost, variable=istopmost)
 menubar.add_cascade(label=lang["text.gui.menu.view"][0], menu=viewmenu, underline=lang["text.gui.menu.view"][1])
-encodingmenu = tk.Menu(menubar, tearoff=0)
+encodingmenu: tk.Menu = tk.Menu(menubar, tearoff=0)
 encodingmenu.add_radiobutton(label=lang["text.gui.menu.encoding.auto_encoding"][0],
                              underline=lang["text.gui.menu.encoding.auto_encoding"][1], variable=encoding,
                              value="auto")
@@ -1218,7 +1503,7 @@ encodingmenu.add_checkbutton(label=lang["text.gui.menu.encoding.binary_mode"][0]
                              underline=lang["text.gui.menu.encoding.binary_mode"][1], command=bin_mode)
 menubar.add_cascade(label=lang["text.gui.menu.encoding"][0], menu=encodingmenu,
                     underline=lang["text.gui.menu.encoding"][1])
-infomenu = tk.Menu(menubar, tearoff=0)
+infomenu: tk.Menu = tk.Menu(menubar, tearoff=0)
 infomenu.add_command(label=lang["text.gui.menu.help.about"][0],
                      command=lambda: tk.messagebox.showinfo(lang["text.gui.title"],
                                                             "v{} {}".format(version, update_date)),
@@ -1231,8 +1516,8 @@ infomenu.add_command(label=lang["text.gui.menu.help.copyright"][0],
 menubar.add_cascade(label=lang["text.gui.menu.help"][0], menu=infomenu, underline=lang["text.gui.menu.help"][1])
 
 # 状态栏初始化
-status_bar_var = tk.StringVar()
-status_bar = tk.Label(window, textvariable=status_bar_var, relief='sunken', bd=tk.TRUE, anchor=tk.W)
+status_bar_var: tk.StringVar = tk.StringVar()
+status_bar: tk.Label = tk.Label(window, textvariable=status_bar_var, relief='sunken', bd=tk.TRUE, anchor=tk.W)
 status_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
 # 快捷键绑定
@@ -1266,6 +1551,7 @@ window.bind("<Control-Shift-z>", lambda event: e.edit_redo())
 e.bind("<Button-3>", lambda event: contextmenu.post(event.x_root, event.y_root))
 e.bind('<<TextModified>>', on_modify)
 e.event_add('<<CursorEvent>>', *('<KeyPress>', '<KeyRelease>', '<ButtonPress>', '<ButtonRelease>'))
+# noinspection PyTypeChecker
 e.bind('<<CursorEvent>>', update_status_bar)
 windnd.hook_dropfiles(e, func=drop(open_file))
 window.config(menu=menubar)
@@ -1276,7 +1562,7 @@ WNDPROCTYPE = ctypes.WINFUNCTYPE(ctypes.c_long, wintypes.HWND, wintypes.UINT, wi
 # 新窗口处理器（防退出）
 def new_wndproc(hwnd, msg, wparam, lparam):
     if msg == win32con.WM_CLOSE:
-        return exit_window(True)
+        return exit_window()
     elif msg == win32con.WM_QUERYENDSESSION:
         return issave()
     elif msg == win32con.WM_ENDSESSION:
@@ -1287,7 +1573,7 @@ def new_wndproc(hwnd, msg, wparam, lparam):
     return user32.CallWindowProcW(wndproc, hwnd, msg, wparam, lparam)
 
 
-wndproc = user32.SetWindowLongW(window_hwnd, -4, WNDPROCTYPE(new_wndproc))
+wndproc: int = user32.SetWindowLongW(window_hwnd, -4, WNDPROCTYPE(new_wndproc))
 
 window.protocol('WM_DELETE_WINDOW', exit_window)
 plugin_object.run_plugins("main", globals(), locals())
