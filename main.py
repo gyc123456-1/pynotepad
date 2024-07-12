@@ -1332,8 +1332,8 @@ class TempSave:
             os.startfile(sys.argv[0])
 
 
-version: str = "4.4.3"
-update_date: str = "2024/6/20"
+version: str = "4.5"
+update_date: str = "2024/7/12"
 font: typing.Tuple[str, int, str] = ("Microsoft YaHei UI", 10, "")
 encodings: typing.List[str] = ["GBK", "UTF-16", "BIG5", "shift_jis", "UTF-8"]
 file_encoding: str = sys.getdefaultencoding()
